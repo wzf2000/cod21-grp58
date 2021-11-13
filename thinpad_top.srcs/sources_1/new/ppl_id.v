@@ -1,3 +1,4 @@
+`default_nettype none
 `timescale 1ns / 1ps
 `include "opcodes.vh"
 
@@ -33,6 +34,7 @@ module ppl_id(
     output reg[6:0] alu_opcode,
     output reg[2:0] alu_funct3,
     output reg[6:0] alu_funct7,
+    output reg[11:0] alu_funct_csr,
 
     output reg mem_en,
     output reg[31:0] mem_addr,
@@ -40,6 +42,36 @@ module ppl_id(
     output reg[31:0] ret_addr,
     output reg branch_flag_out,
     output reg[31:0] branch_addr_out,
+
+    //get CSR value from CSR file
+    input wire [31:0] mtvec_data_in,
+    input wire [31:0] mscratch_data_in,
+    input wire [31:0] mepc_data_in,
+    input wire [31:0] mcause_data_in,
+    input wire [31:0] mstatus_data_in,
+    input wire [31:0] mie_data_in,
+    input wire [31:0] mip_data_in,
+    input wire [1:0] privilege_data_in,
+
+    //output whether CSR is written to
+    output reg mtvec_we,
+    output reg mscratch_we,
+    output reg mepc_we,
+    output reg mcause_we,
+    output reg mstatus_we,
+    output reg mie_we,
+    output reg mip_we,
+    output reg privilege_we,
+
+    //pass on CSR value to next stage
+    output wire [31:0] mtvec_data_out,
+    output wire [31:0] mscratch_data_out,
+    output wire [31:0] mepc_data_out,
+    output wire [31:0] mcause_data_out,
+    output wire [31:0] mstatus_data_out,
+    output wire [31:0] mie_data_out,
+    output wire [31:0] mip_data_out,
+    output wire [2:0] privilege_data_out,
 
     output wire stallreq
 );
@@ -76,6 +108,7 @@ always @(*) begin
         alu_opcode = `OP_NOP;
         alu_funct3 = `FUNCT3_NOP;
         alu_funct7 = `FUNCT7_NOP;
+        alu_funct_csr = 0;
         reg_write = 0;
         regs1_en = 0;
         regs2_en = 0;
@@ -86,12 +119,14 @@ always @(*) begin
         mem_addr = 32'b0;
         branch_flag_out = 0;
         branch_addr_out = 32'b0;
+        {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, privilege_we} = 8'b0;
     end
     else begin
         pc_out = pc_in;
         alu_opcode = `OP_NOP;
         alu_funct3 = `FUNCT3_NOP;
         alu_funct7 = `FUNCT7_NOP;
+        alu_funct_csr = 0;
         reg_write = 0;
         regs1_en = 0;
         regs2_en = 0;
@@ -102,6 +137,7 @@ always @(*) begin
         mem_addr = 32'b0;
         branch_flag_out = 0;
         branch_addr_out = 32'b0;
+        {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, privilege_we} = 8'b0;
 
         case (opcode)
             `OP_R: begin
@@ -109,6 +145,12 @@ always @(*) begin
                 regs2_en = 1;
                 case (funct3)
                     `FUNCT3_ADD, `FUNCT3_AND: begin
+                        alu_opcode = opcode;
+                        alu_funct3 = funct3;
+                        alu_funct7 = funct7;
+                        reg_write = 1;
+                    end
+                    `FUNCT3_SLTU: begin
                         alu_opcode = opcode;
                         alu_funct3 = funct3;
                         alu_funct7 = funct7;
@@ -248,7 +290,56 @@ always @(*) begin
                 end
             end
             `OP_CSR: begin
-                // TODO: CSR instruction
+                // todo: CSR instruction
+                alu_opcode = opcode;
+                alu_funct3 = funct3;
+                alu_funct_csr = instr[31:20];
+                case (funct3)
+                    `FUNCT3_CSRRC, `FUNCT3_CSRRS, `FUNCT3_CSRRW: begin
+                        reg_write = 1;
+                        regs1_en = 1;
+                        regs2_en = 0;
+                        case(instr[31:20])
+                            12'h305: mtvec_we = 1'b1;
+                            12'h340: mscratch_we = 1'b1;
+                            12'h341: mepc_we = 1'b1;
+                            12'h342: mcause_we = 1'b1;
+                            12'h300: mstatus_we = 1'b1;
+                            12'h304: mie_we = 1'b1;
+                            12'h344: mip_we = 1'b1;
+                            default: mtvec_we = 1'b0;
+                        endcase
+                    end
+                    `FUNCT3_EBREAK: begin
+                        reg_write = 0;
+                        regs1_en = 0;
+                        regs2_en = 0;
+                        case(instr[31:20])
+                            12'h000, 12'h001: begin //ecall, ebreak
+                                privilege_we = 1'b1;
+                                mstatus_we = 1'b1;
+                                mepc_we = 1'b1;
+                                mcause_we = 1'b1;
+                                branch_flag_out = 1'b1;
+                                branch_addr_out = mtvec_data_in;
+                            end
+                            12'h302: begin //mret
+                                privilege_we = 1'b1;
+                                mstatus_we = 1'b1;
+                                branch_flag_out = 1'b1;
+                                branch_addr_out = mepc_data_in;
+                            end
+                            default: begin
+                                
+                            end
+                        endcase
+                    end
+                    default: begin
+                        reg_write = 0;
+                        regs1_en = 0;
+                        regs2_en = 0;
+                    end
+                endcase
             end
             default: begin
                 // unknown instruction type, do nothing
@@ -256,6 +347,16 @@ always @(*) begin
         endcase
     end
 end
+
+//Forwarding is done inside csr.v
+assign mtvec_data_out = mtvec_data_in;
+assign mscratch_data_out = mscratch_data_in;
+assign mepc_data_out = mepc_data_in;
+assign mcause_data_out = mcause_data_in;
+assign mstatus_data_out = mstatus_data_in;
+assign mie_data_out = mie_data_in;
+assign mip_data_out = mip_data_in;
+assign privilege_data_out = privilege_data_in;
 
 always @(*) begin
     stall_req_regs1 = 0;

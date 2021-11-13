@@ -2,6 +2,8 @@
 
 `define FUNCT3_ADD 3'b000
 
+`define FUNCT3_SLTU 3'b011
+
 `define FUNCT3_XOR 3'b100
 `define FUNCT7_XOR 7'b0000000
 `define FUNCT7_PACK 7'b0000100
@@ -61,6 +63,14 @@
 
 
 `define OP_CSR 7'b1110011
+
+`define FUNCT3_CSRRC 3'b011
+
+`define FUNCT3_CSRRS 3'b010
+
+`define FUNCT3_CSRRW 3'b001
+
+`define FUNCT3_EBREAK 3'b000
 
 
 `define OP_NOP 7'b0000000

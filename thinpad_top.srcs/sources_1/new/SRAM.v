@@ -3,6 +3,14 @@
 module SRAM(
     input wire rst,
 
+    // TIMER
+    input wire[63:0] mtime,
+    input wire[63:0] mtimecmp,
+    output reg mtime_we,
+    output reg mtimecmp_we,
+    output reg upper,
+    output reg[31:0] timer_wdata,
+
     // CPLD
     output reg uart_rdn,
     output reg uart_wrn,
@@ -60,9 +68,12 @@ assign state = mem_address[7:0];
 `define BASE 3'b001
 `define UART_DATA 3'b010
 `define UART_STATE 3'b011
+`define MTIME_ 3'b110
+`define MTIMECMP_ 3'b111
 
 always @(*) begin
     if (if_en) begin
+        upper = 1'b0;
         mem_address = if_addr[21:2];
         case (if_addr[31:22])
             10'h200: begin // ext ram
@@ -88,6 +99,7 @@ always @(*) begin
         endcase
     end
     else if (mem_en) begin
+        upper = 1'b0;
         mem_address = mem_addr[21:2];
         case (mem_addr[31:22])
             10'h200: begin // ext ram
@@ -107,12 +119,37 @@ always @(*) begin
                     which = 3'b100;
                 end
             end
+            10'h008: begin // time
+                case (mem_addr)
+                    32'h0200bff8: begin
+                        which = `MTIME_;
+                        upper = 1'b0;
+                    end
+                    32'h0200bffc: begin
+                        which = `MTIME_;
+                        upper = 1'b1;
+                    end
+                    32'h02004000: begin
+                        which = `MTIMECMP_;
+                        upper = 1'b0;
+                    end
+                    32'h02004004: begin
+                        which = `MTIMECMP_;
+                        upper = 1'b1;
+                    end
+                    default: begin
+                        which = 3'b100;
+                        upper = 1'b0;
+                    end
+                endcase
+            end
             default: begin
                 which = 3'b100;
             end
         endcase
     end
     else begin
+        upper = 1'b0;
         which = 3'b100;
         mem_address = 20'b0;
     end
@@ -154,6 +191,14 @@ always @(*) begin
             `UART_STATE: begin
                 mem_data_out = {18'b0, uart_tbre & uart_tsre, 4'b0, uart_dataready, 8'b0};
             end
+            `MTIME_: begin
+                if (upper) mem_data_out = mtime[63:32];
+                else mem_data_out = mtime[31:0];
+            end
+            `MTIMECMP_: begin
+                if (upper) mem_data_out = mtimecmp[63:32];
+                else mem_data_out = mtimecmp[31:0];
+            end
             default: begin
                 // unknown address, do nothing
             end
@@ -181,6 +226,9 @@ always @(*) begin
     uart_rdn = 1;
     uart_wrn = 1;
     
+    mtime_we = 0;
+    mtimecmp_we = 0;
+    timer_wdata = 32'b0;
     if (if_en) begin
         case (which)
             `EXT: begin
@@ -240,6 +288,14 @@ always @(*) begin
                     base_data_z = 0;
                     uart_wrn = 0;
                     base_ram_data_reg = {24'b0, mem_data_in[7:0]};
+                end
+                `MTIME_: begin
+                    mtime_we = 1;
+                    timer_wdata = mem_data_in;
+                end
+                `MTIMECMP_: begin
+                    mtimecmp_we = 1;
+                    timer_wdata = mem_data_in;
                 end
             endcase
         end
