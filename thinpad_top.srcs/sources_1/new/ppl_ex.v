@@ -252,7 +252,7 @@ always @(*) begin
                             end
                             12'h341: begin
                                 data_out = mepc_in;
-                                mscratch_out = mscratch_in & ~regs1_in;
+                                mepc_out = mepc_in & ~regs1_in;
                             end
                             12'h342: begin
                                 data_out = mcause_in;
@@ -286,7 +286,7 @@ always @(*) begin
                             end
                             12'h341: begin
                                 data_out = mepc_in;
-                                mscratch_out = mscratch_in | regs1_in;
+                                mepc_out = mepc_in | regs1_in;
                             end
                             12'h342: begin
                                 data_out = mcause_in;
@@ -320,7 +320,7 @@ always @(*) begin
                             end
                             12'h341: begin
                                 data_out = mepc_in;
-                                mscratch_out = regs1_in;
+                                mepc_out = regs1_in;
                             end
                             12'h342: begin
                                 data_out = mcause_in;
