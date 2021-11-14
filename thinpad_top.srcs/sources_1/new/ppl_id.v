@@ -139,6 +139,19 @@ always @(*) begin
         branch_addr_out = 32'b0;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, privilege_we} = 8'b0;
 
+        //timer interrupt
+        if (mip_data_in[7] & mie_data_in[7] & (mstatus_data_in[3] | ~privilege_data_in[0])) //MTIP && MTIE && MIE
+        begin
+            alu_opcode = `OP_CSR;
+            alu_funct3 = `FUNCT3_EBREAK;  //similar to ebreak
+            alu_funct_csr = 12'hfff; //self-defined code
+            privilege_we = 1'b1;
+            mstatus_we = 1'b1;
+            mepc_we = 1'b1;
+            mcause_we = 1'b1;
+            branch_flag_out = 1'b1;
+            branch_addr_out = mtvec_data_in;
+        end
         case (opcode)
             `OP_R: begin
                 regs1_en = 1;

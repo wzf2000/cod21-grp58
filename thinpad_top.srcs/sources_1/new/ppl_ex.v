@@ -360,6 +360,12 @@ always @(*) begin
                                 priv_out = mstatus_in[12:11];
                                 mstatus_out = {mstatus_in[31:13],2'b11,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],mstatus_in[7],mstatus_in[2:0]};
                             end
+                            12'hfff: begin //timer interrupt
+                                priv_out = 2'b11;
+                                mstatus_out = {mstatus_in[31:13],priv_in,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],1'b0,mstatus_in[2:0]};
+                                mepc_out = pc_in;
+                                mcause_out = {1'b0, 27'b0, 4'b0111};
+                            end
                             default: begin
                             end
                         endcase
