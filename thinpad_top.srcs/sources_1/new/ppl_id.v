@@ -51,6 +51,7 @@ module ppl_id(
     input wire [31:0] mstatus_data_in,
     input wire [31:0] mie_data_in,
     input wire [31:0] mip_data_in,
+    input wire [31:0] satp_data_in,
     input wire [1:0] privilege_data_in,
 
     //output whether CSR is written to
@@ -61,6 +62,7 @@ module ppl_id(
     output reg mstatus_we,
     output reg mie_we,
     output reg mip_we,
+    output reg satp_we,
     output reg privilege_we,
 
     //pass on CSR value to next stage
@@ -71,6 +73,7 @@ module ppl_id(
     output wire [31:0] mstatus_data_out,
     output wire [31:0] mie_data_out,
     output wire [31:0] mip_data_out,
+    output wire [31:0] satp_data_out,
     output wire [2:0] privilege_data_out,
 
     output wire stallreq
@@ -119,7 +122,7 @@ always @(*) begin
         mem_addr = 32'b0;
         branch_flag_out = 0;
         branch_addr_out = 32'b0;
-        {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, privilege_we} = 8'b0;
+        {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
     end
     else begin
         pc_out = pc_in;
@@ -137,7 +140,7 @@ always @(*) begin
         mem_addr = 32'b0;
         branch_flag_out = 0;
         branch_addr_out = 32'b0;
-        {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, privilege_we} = 8'b0;
+        {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
 
         //timer interrupt
         if (mip_data_in[7] & mie_data_in[7] & (mstatus_data_in[3] | ~privilege_data_in[0])) //MTIP && MTIE && MIE
@@ -320,6 +323,7 @@ always @(*) begin
                             12'h300: mstatus_we = 1'b1;
                             12'h304: mie_we = 1'b1;
                             12'h344: mip_we = 1'b1;
+                            12'h180: satp_we = 1'b1;
                             default: mtvec_we = 1'b0;
                         endcase
                     end
@@ -343,7 +347,15 @@ always @(*) begin
                                 branch_addr_out = mepc_data_in;
                             end
                             default: begin
-                                
+                                if(instr[31:25]==7'b0001001) begin
+                                    //TODO: flush TLB
+                                    alu_opcode = `OP_NOP;
+                                    alu_funct3 = `FUNCT3_NOP;
+                                    alu_funct7 = `FUNCT7_NOP;
+                                end
+                                else begin
+                                    
+                                end
                             end
                         endcase
                     end
@@ -370,6 +382,7 @@ assign mstatus_data_out = mstatus_data_in;
 assign mie_data_out = mie_data_in;
 assign mip_data_out = mip_data_in;
 assign privilege_data_out = privilege_data_in;
+assign satp_data_out = satp_data_in;
 
 always @(*) begin
     stall_req_regs1 = 0;

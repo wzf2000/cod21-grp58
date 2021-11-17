@@ -13,6 +13,7 @@ module csr(
     input wire mstatus_we,
     input wire mie_we,
     input wire mip_we,
+    input wire satp_we,
     input wire privilege_we,
 
     input wire [31:0] mtvec_wdata,
@@ -22,6 +23,7 @@ module csr(
     input wire [31:0] mstatus_wdata,
     input wire [31:0] mie_wdata,
     input wire [31:0] mip_wdata,
+    input wire [31:0] satp_wdata,
     input wire [1:0] privilege_wdata,
 
     output reg[31:0] mtvec_o, //base = mtvec[31:2]; mode = mtvec[1:0]
@@ -31,6 +33,7 @@ module csr(
     output reg[31:0] mstatus_o, //need to implement mpp [12:11]
     output reg[31:0] mie_o, //need to implement MTIE [7]
     output reg[31:0] mip_o, //need to implement MTIP [7]
+    output reg[31:0] satp_o,
     output reg[1:0] privilege_o
 );
 //all of the following are rw
@@ -42,6 +45,7 @@ reg[31:0] mstatus; //need to implement mpp [12:11]
 reg[31:0] mie; //need to implement MTIE [7]
 reg[31:0] mip; //need to implement MTIP [7]
 reg[1:0] privilege;
+reg[31:0] satp;
 
 always @(posedge clk or posedge rst) begin
     if(rst) begin
@@ -52,6 +56,7 @@ always @(posedge clk or posedge rst) begin
         mstatus <= 32'b0;
         mie <= 32'b0;
         mip <= 32'b0;
+        satp <= 32'b0;
         privilege <= 2'b11;
     end
     else begin
@@ -69,6 +74,8 @@ always @(posedge clk or posedge rst) begin
         else mie <= mie;
         if(mip_we) mip <= mip_wdata;
         else mip <= {24'b0,int_time,7'b0};
+        if(satp_we) satp <= satp_wdata;
+        else satp <= satp;
         if(privilege_we) privilege <= privilege_wdata;
         else privilege <= privilege;
     end
@@ -89,6 +96,8 @@ always @(*) begin
     else mie_o = mie;
     if(mip_we) mip_o = mip_wdata;
     else mip_o = mip;
+    if(satp_we) satp = satp_wdata;
+    else satp = satp;
     if(privilege_we) privilege_o = privilege_wdata;
     else privilege_o = privilege;
 end

@@ -42,6 +42,7 @@ module ppl_id_ex(
     input wire id_mie_we,
     input wire id_mip_we,
     input wire id_priv_we,
+    input wire id_satp_we,
 
     output reg ex_mtvec_we,
     output reg ex_mscratch_we,
@@ -51,6 +52,7 @@ module ppl_id_ex(
     output reg ex_mie_we,
     output reg ex_mip_we,
     output reg ex_priv_we,
+    output reg ex_satp_we,
 
     input wire [31:0] id_mtvec_data,
     input wire [31:0] id_mscratch_data,
@@ -59,6 +61,7 @@ module ppl_id_ex(
     input wire [31:0] id_mstatus_data,
     input wire [31:0] id_mie_data,
     input wire [31:0] id_mip_data,
+    input wire [31:0] id_satp_data,
     input wire [1:0] id_priv_data,
 
     output reg [31:0] ex_mtvec_data,
@@ -68,6 +71,7 @@ module ppl_id_ex(
     output reg [31:0] ex_mstatus_data,
     output reg [31:0] ex_mie_data,
     output reg [31:0] ex_mip_data,
+    output reg [31:0] ex_satp_data,
     output reg [1:0] ex_priv_data
 );
 
@@ -94,6 +98,7 @@ always @(posedge clk or posedge rst) begin
         ex_mie_we <= 0;
         ex_mip_we <= 0;
         ex_priv_we <= 0;
+        ex_satp_we <= 0;
 
         ex_mtvec_data <= 32'b0;
         ex_mscratch_data <= 32'b0;
@@ -102,6 +107,7 @@ always @(posedge clk or posedge rst) begin
         ex_mstatus_data <= 32'b0;
         ex_mie_data <= 32'b0;
         ex_mip_data <= 32'b0;
+        ex_satp_data <= 32'b0;
         ex_priv_data <= 2'b0;
     end
     else if (stall) begin
@@ -126,6 +132,7 @@ always @(posedge clk or posedge rst) begin
         ex_mie_we <= 0;
         ex_mip_we <= 0;
         ex_priv_we <= 0;
+        ex_satp_we <= 0;
     end
     else begin
         ex_pc <= id_pc;
@@ -149,6 +156,7 @@ always @(posedge clk or posedge rst) begin
         ex_mie_data <= id_mie_data;
         ex_mip_data <= id_mip_data;
         ex_priv_data <= id_priv_data;
+        ex_satp_data <= id_satp_data;
 
         ex_mtvec_we <= id_mtvec_we;
         ex_mscratch_we <= id_mscratch_we;
@@ -158,6 +166,7 @@ always @(posedge clk or posedge rst) begin
         ex_mie_we <= id_mie_we;
         ex_mip_we <= id_mip_we;
         ex_priv_we <= id_priv_we;
+        ex_satp_we <= id_satp_we;
     end
 end
 

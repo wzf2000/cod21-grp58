@@ -156,6 +156,7 @@ wire mcause_we;
 wire mstatus_we;
 wire mie_we;
 wire mip_we;
+wire satp_we;
 wire privilege_we;
 //input
 wire [31:0] mtvec_wdata;
@@ -165,6 +166,7 @@ wire [31:0] mcause_wdata;
 wire [31:0] mstatus_wdata;
 wire [31:0] mie_wdata;
 wire [31:0] mip_wdata;
+wire [31:0] satp_wdata;
 wire [1:0] privilege_wdata;
 //output
 wire[31:0] mtvec_o;
@@ -174,6 +176,7 @@ wire[31:0] mcause_o;
 wire[31:0] mstatus_o;
 wire[31:0] mie_o;
 wire[31:0] mip_o;
+wire[31:0] satp_o;
 wire[1:0] privilege_o;
 
 csr csr_inst (
@@ -188,6 +191,7 @@ csr csr_inst (
     .mstatus_we(mstatus_we),
     .mie_we(mie_we),
     .mip_we(mip_we),
+    .satp_we(satp_we),
     .privilege_we(privilege_we),
     //input
     .mtvec_wdata(mtvec_wdata),
@@ -197,6 +201,7 @@ csr csr_inst (
     .mstatus_wdata(mstatus_wdata),
     .mie_wdata(mie_wdata),
     .mip_wdata(mip_wdata),
+    .satp_wdata(satp_wdata),
     .privilege_wdata(privilege_wdata),
     //output
     .mtvec_o(mtvec_o),
@@ -206,6 +211,7 @@ csr csr_inst (
     .mstatus_o(mstatus_o),
     .mie_o(mie_o),
     .mip_o(mip_o),
+    .satp_o(satp_o),
     .privilege_o(privilege_o)
 );
 
@@ -258,6 +264,7 @@ wire[31:0] id_mcause_data;
 wire[31:0] id_mstatus_data;
 wire[31:0] id_mie_data;
 wire[31:0] id_mip_data;
+wire[31:0] id_satp_data;
 wire[1:0] id_priv_data;
 
 wire id_mtvec_we;
@@ -267,6 +274,7 @@ wire id_mcause_we;
 wire id_mstatus_we;
 wire id_mie_we;
 wire id_mip_we;
+wire id_satp_we;
 wire id_priv_we;
 
 wire[31:0] ex_mtvec_data;
@@ -276,6 +284,7 @@ wire[31:0] ex_mcause_data;
 wire[31:0] ex_mstatus_data;
 wire[31:0] ex_mie_data;
 wire[31:0] ex_mip_data;
+wire[31:0] ex_satp_data;
 wire[1:0] ex_priv_data;
 
 wire ex_mtvec_we;
@@ -285,6 +294,7 @@ wire ex_mcause_we;
 wire ex_mstatus_we;
 wire ex_mie_we;
 wire ex_mip_we;
+wire ex_satp_we;
 wire ex_priv_we;
 
 // EXE stage input
@@ -489,6 +499,7 @@ ppl_id id(
     .mstatus_data_in(mstatus_o),
     .mie_data_in(mie_o),
     .mip_data_in(mip_o),
+    .satp_data_in(satp_o),
     .privilege_data_in(privilege_o),
 
     .mtvec_we(id_mtvec_we),
@@ -498,6 +509,7 @@ ppl_id id(
     .mstatus_we(id_mstatus_we),
     .mie_we(id_mie_we),
     .mip_we(id_mip_we),
+    .satp_we(id_satp_we),
     .privilege_we(id_priv_we),
 
     .mtvec_data_out(id_mtvec_data),
@@ -507,6 +519,7 @@ ppl_id id(
     .mstatus_data_out(id_mstatus_data),
     .mie_data_out(id_mie_data),
     .mip_data_out(id_mip_data),
+    .satp_data_out(id_satp_data),
     .privilege_data_out(id_priv_data),
 
     .stallreq(stallreq_id)
@@ -553,6 +566,7 @@ ppl_id_ex id_ex(
     .id_mie_we(id_mie_we),
     .id_mip_we(id_mip_we),
     .id_priv_we(id_priv_we),
+    .id_satp_we(id_satp_we),
 
     .ex_mtvec_we(ex_mtvec_we),
     .ex_mscratch_we(ex_mscratch_we),
@@ -562,6 +576,7 @@ ppl_id_ex id_ex(
     .ex_mie_we(ex_mie_we),
     .ex_mip_we(ex_mip_we),
     .ex_priv_we(ex_priv_we),
+    .ex_satp_we(ex_satp_we),
 
     .id_mtvec_data(id_mtvec_data),
     .id_mscratch_data(id_mscratch_data),
@@ -570,6 +585,7 @@ ppl_id_ex id_ex(
     .id_mstatus_data(id_mstatus_data),
     .id_mie_data(id_mie_data),
     .id_mip_data(id_mip_data),
+    .id_satp_data(id_satp_data),
     .id_priv_data(id_priv_data),
 
     .ex_mtvec_data(ex_mtvec_data),
@@ -579,6 +595,7 @@ ppl_id_ex id_ex(
     .ex_mstatus_data(ex_mstatus_data),
     .ex_mie_data(ex_mie_data),
     .ex_mip_data(ex_mip_data),
+    .ex_satp_data(ex_satp_data),
     .ex_priv_data(ex_priv_data)
 );
 
@@ -607,6 +624,7 @@ ppl_ex ex(
     .mstatus_in(ex_mstatus_data),
     .mie_in(ex_mie_data),
     .mip_in(ex_mip_data),
+    .satp_in(ex_satp_data),
     .priv_in(ex_priv_data),
 
     .mtvec_out(mtvec_wdata),
@@ -616,6 +634,7 @@ ppl_ex ex(
     .mstatus_out(mstatus_wdata),
     .mie_out(mie_wdata),
     .mip_out(mip_wdata),
+    .satp_out(satp_wdata),
     .priv_out(privilege_wdata),
 
     .mtvec_we_in(ex_mtvec_we),
@@ -625,6 +644,7 @@ ppl_ex ex(
     .mstatus_we_in(ex_mstatus_we),
     .mie_we_in(ex_mie_we),
     .mip_we_in(ex_mip_we),
+    .satp_we_in(ex_satp_we),
     .priv_we_in(ex_priv_we),
 
     .mtvec_we_out(mtvec_we),
@@ -634,6 +654,7 @@ ppl_ex ex(
     .mstatus_we_out(mstatus_we),
     .mie_we_out(mie_we),
     .mip_we_out(mip_we),
+    .satp_we_out(satp_we),
     .priv_we_out(privilege_we),
 
     .alu_opcode_out(ex_alu_opcode_out),

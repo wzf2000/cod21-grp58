@@ -26,6 +26,7 @@ module ppl_ex(
     input wire [31:0] mstatus_in,
     input wire [31:0] mie_in,
     input wire [31:0] mip_in,
+    input wire [31:0] satp_in,
     input wire [1:0] priv_in,
 
     output reg [31:0] mtvec_out,
@@ -35,6 +36,7 @@ module ppl_ex(
     output reg [31:0] mstatus_out,
     output reg [31:0] mie_out,
     output reg [31:0] mip_out,
+    output reg [31:0] satp_out,
     output reg [1:0] priv_out,
 
     input wire mtvec_we_in,
@@ -44,6 +46,7 @@ module ppl_ex(
     input wire mstatus_we_in,
     input wire mie_we_in,
     input wire mip_we_in,
+    input wire satp_we_in,
     input wire priv_we_in,
 
     output reg mtvec_we_out,
@@ -53,6 +56,7 @@ module ppl_ex(
     output reg mstatus_we_out,
     output reg mie_we_out,
     output reg mip_we_out,
+    output reg satp_we_out,
     output reg priv_we_out,
     
     output wire[6:0] alu_opcode_out,
@@ -87,6 +91,7 @@ always @(*) begin
         mstatus_we_out = 0;
         mie_we_out = 0;
         mip_we_out = 0;
+        satp_we_out = 0;
         priv_we_out = 0;
 
         mtvec_out = 0;
@@ -96,6 +101,7 @@ always @(*) begin
         mstatus_out = 0;
         mie_out = 0;
         mip_out = 0;
+        satp_out = 0;
         priv_out = 0;
     end
     else begin
@@ -112,6 +118,7 @@ always @(*) begin
         mstatus_we_out = mstatus_we_in;
         mie_we_out = mie_we_in;
         mip_we_out = mip_we_in;
+        satp_we_out = satp_we_in;
         priv_we_out = priv_we_in;
 
         mtvec_out = mtvec_in;
@@ -121,6 +128,7 @@ always @(*) begin
         mstatus_out = mstatus_in;
         mie_out = mie_in;
         mip_out = mip_in;
+        satp_out = satp_in;
         priv_out = priv_in;
         case (alu_opcode_in)
             `OP_R: begin
@@ -270,6 +278,10 @@ always @(*) begin
                                 data_out = mip_in;
                                 mip_out = mip_in & ~regs1_in;
                             end
+                            12'h180: begin
+                                data_out = satp_in;
+                                satp_out = satp_in & ~regs1_in;
+                            end
                             default: begin
                             end
                         endcase
@@ -304,6 +316,10 @@ always @(*) begin
                                 data_out = mip_in;
                                 mip_out = mip_in | regs1_in;
                             end
+                            12'h180: begin
+                                data_out = satp_in;
+                                satp_out = satp_in | regs1_in;
+                            end
                             default: begin
                             end
                         endcase
@@ -337,6 +353,10 @@ always @(*) begin
                             12'h344: begin
                                 data_out = mip_in;
                                 mip_out = regs1_in;
+                            end
+                            12'h180: begin
+                                data_out = satp_in;
+                                satp_out = regs1_in;
                             end
                             default: begin
                             end
