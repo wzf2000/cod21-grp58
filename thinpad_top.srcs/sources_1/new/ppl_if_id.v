@@ -9,7 +9,8 @@ module ppl_if_id(
     input wire stall,
 
     input wire[31:0] ram_data,
-    
+
+    input wire if_bubble, // 1: busy, 0: not busy
     input wire branch_predict, // 1: jump, 0: not jump
 
     output reg[31:0] id_pc,
@@ -26,7 +27,7 @@ always @(posedge clk or posedge rst) begin
             id_pc <= id_pc;
             id_instr <= id_instr;
         end
-        else if (branch_predict) begin
+        else if (branch_predict | if_bubble) begin
             id_pc <= 32'b0;
             id_instr <= 32'b0;
         end

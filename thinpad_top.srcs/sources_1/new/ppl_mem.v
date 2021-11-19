@@ -38,6 +38,7 @@ module ppl_mem(
     output wire stallreq // go to "thinpad_top"
 );
 
+
 wire rw = (alu_opcode_in == `OP_S)||(alu_opcode_in == `OP_L);
 wire translation = rw & (~priv[0]) & satp[31];
 assign stallreq = translation & (~mem_phase[1]); //00:level 1 table, 01:level 2 table, 10: physical addr
@@ -59,7 +60,6 @@ always @(*) begin
     end
     else begin
         regd_addr_out = regd_addr_in;
-        regd_en_out = regd_en_in;
         data_out = data_in;
         write_data = 32'b0;
         ram_addr = 32'b0;
@@ -70,7 +70,8 @@ always @(*) begin
         mem_phase_back = 2'b0;
         mem_addr_back = 32'b0;
         if (mem_en_in) begin
-            if(translation & (~mem_phase[1]) & ~(mem_phase[0]))begin // 00: level 1 table
+            if(translation & (~mem_phase[1]) & (~mem_phase[0]))begin // 00: level 1 table
+                regd_en_out = 0;
                 ram_addr = {satp[19:0],virtual_addr[31:22],2'b00}; //each PTE is 4bytes
                 ram_be_n = 4'b0;
                 ram_ce_n = 1'b0;
@@ -79,7 +80,8 @@ always @(*) begin
                 mem_addr_back = {read_data[29:10],virtual_addr[21:12],2'b00};
                 mem_phase_back = 2'b01;
             end
-            else if(translation & (~mem_phase[1]) & mem_phase[9])begin // 01: level 2 table
+            else if(translation & (~mem_phase[1]) & mem_phase[0])begin // 01: level 2 table
+                regd_en_out = 0;
                 ram_addr = mem_addr_in;
                 ram_be_n = 4'b0;
                 ram_ce_n = 1'b0;
@@ -89,6 +91,7 @@ always @(*) begin
                 mem_phase_back = 2'b10;
             end
             else begin // doesn't need translation or translation done (phase=10)
+                regd_en_out = regd_en_in;
                 case (alu_opcode_in)
                     `OP_S: begin
                         ram_addr = mem_addr_in;
