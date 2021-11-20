@@ -96,8 +96,8 @@ always @(*) begin
     else mie_o = mie;
     if(mip_we) mip_o = mip_wdata;
     else mip_o = mip;
-    if(satp_we) satp = satp_wdata;
-    else satp = satp;
+    if(satp_we) satp_o = satp_wdata;
+    else satp_o = satp;
     if(privilege_we) privilege_o = privilege_wdata;
     else privilege_o = privilege;
 end
