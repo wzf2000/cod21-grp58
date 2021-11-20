@@ -69,6 +69,7 @@ always @(*) begin
         ram_oe_n = 1;
         mem_phase_back = 2'b0;
         mem_addr_back = 32'b0;
+        regd_en_out = regd_en_in;
         if (mem_en_in) begin
             if(translation & (~mem_phase[1]) & (~mem_phase[0]))begin // 00: level 1 table
                 regd_en_out = 0;
