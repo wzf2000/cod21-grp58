@@ -78,8 +78,14 @@ always @(*) begin
                 ram_ce_n = 1'b0;
                 ram_we_n = 1'b1;
                 ram_oe_n = 1'b0;
-                mem_addr_back = {read_data[29:10],virtual_addr[21:12],2'b00};
-                mem_phase_back = 2'b01;
+                if (read_data[3]|read_data[2]|read_data[1]) begin //r w x is not all zero, PTE is leaf
+                    mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
+                    mem_phase_back = 2'b10;
+                end
+                else begin //r w is is all zero, need to get level 2 table
+                    mem_addr_back = {read_data[29:10],virtual_addr[21:12],2'b00};
+                    mem_phase_back = 2'b01;
+                end
             end
             else if(translation & (~mem_phase[1]) & mem_phase[0])begin // 01: level 2 table
                 regd_en_out = 0;
