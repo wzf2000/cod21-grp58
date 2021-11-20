@@ -20,8 +20,8 @@ assign state = pc_ram_addr[3:0];
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        pc <= 32'h7999999c;
-        pc_ram_addr <= 32'h7999999c;
+        pc <= 32'h7ffffffc;
+        pc_ram_addr <= 32'h7ffffffc;
         pc_ram_en <= 0;
         pre_stall <= 0;
     end
