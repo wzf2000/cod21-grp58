@@ -48,7 +48,7 @@ reg [19:0] tlb_physical;
 wire rw = (alu_opcode_in == `OP_S)||(alu_opcode_in == `OP_L);
 wire translation = rw & (~priv[0]) & satp[31];
 wire tlb_hit = tlb_valid && (tlb_virtual == virtual_addr[31:12]);
-assign stallreq = translation & (~mem_phase[1]); //00:level 1 table, 01:level 2 table, 10: physical addr
+assign stallreq = translation & (~mem_phase[1]) & (~tlb_hit); //00:level 1 table, 01:level 2 table, 10: physical addr
 assign ctrl_back = translation & (~mem_phase[1]) & (~tlb_hit);
 
 always @(*) begin
