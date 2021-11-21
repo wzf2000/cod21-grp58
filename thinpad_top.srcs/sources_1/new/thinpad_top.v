@@ -244,6 +244,7 @@ wire[31:0] id_regs2_in;
 
 // ID stage output
 wire id_branch_flag_out;
+wire id_critical_flag_out;
 wire[31:0] id_branch_addr_out;
 wire[4:0] id_regs1_addr_out;
 wire[4:0] id_regs2_addr_out;
@@ -421,6 +422,7 @@ PC_reg pc_reg(
     .stall(stall),
 
     .branch_flag(id_branch_flag_out),
+    .critical_flag(id_critical_flag_out),
     .branch_addr(id_branch_addr_out),
     .mem_addr_retro(if_data_out),
 
@@ -506,6 +508,7 @@ ppl_id id(
 
     .ret_addr(id_ret_addr_out),
     .branch_flag_out(id_branch_flag_out),
+    .critical_flag_out(id_critical_flag_out),
     .branch_addr_out(id_branch_addr_out),
 
     .mtvec_data_in(mtvec_o),

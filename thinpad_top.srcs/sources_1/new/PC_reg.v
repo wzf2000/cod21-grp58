@@ -6,6 +6,7 @@ module PC_reg(
     input wire stall,
 
     input wire branch_flag,
+    input wire critical_flag,
     input wire[31:0] branch_addr,
     input wire[31:0] mem_addr_retro,
 
@@ -51,10 +52,25 @@ always @(posedge clk or posedge rst) begin
         pc_ram_en <= 1;
         if (branch_flag) begin //branch flag should last only 1 cycle
             pc <= branch_addr;
-            bubble <= 1;
-            pc_ram_addr <= branch_addr;
-            mem_phase <= 2'b00;
-            pre_stall <= 1;
+            if (critical_flag) begin
+                bubble <= 1;
+                pc <= branch_addr;
+                mem_phase <= 2'b00;
+                pre_stall <= 1;
+            end
+            else begin
+                if (translation) begin
+                    bubble <= 1;
+                    pc_ram_addr <= {satp[19:0],branch_addr[31:22],2'b00};
+                    mem_phase <= 2'b01;
+                    pre_stall <= 1;
+                end
+                else begin
+                    bubble <= 0;
+                    pc_ram_addr <= branch_addr;
+                    mem_phase <= 2'b00;
+                end
+            end
         end
         else if (pre_stall) begin
             if(translation & (~mem_phase[1]) & (~mem_phase[0])) begin // 00: level 1 table

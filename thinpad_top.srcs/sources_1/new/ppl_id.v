@@ -41,6 +41,7 @@ module ppl_id(
 
     output reg[31:0] ret_addr,
     output reg branch_flag_out,
+    output reg critical_flag_out,
     output reg[31:0] branch_addr_out,
 
     //get CSR value from CSR file
@@ -121,6 +122,7 @@ always @(*) begin
         mem_en = 0;
         mem_addr = 32'b0;
         branch_flag_out = 0;
+        critical_flag_out = 0;
         branch_addr_out = 32'b0;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
     end
@@ -139,6 +141,7 @@ always @(*) begin
         mem_en = 0;
         mem_addr = 32'b0;
         branch_flag_out = 0;
+        critical_flag_out = 0;
         branch_addr_out = 32'b0;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
 
@@ -153,6 +156,7 @@ always @(*) begin
             mepc_we = 1'b1;
             mcause_we = 1'b1;
             branch_flag_out = 1'b1;
+            critical_flag_out = 1'b1;
             branch_addr_out = mtvec_data_in;
         end
         case (opcode)
@@ -338,12 +342,14 @@ always @(*) begin
                                 mepc_we = 1'b1;
                                 mcause_we = 1'b1;
                                 branch_flag_out = 1'b1;
+                                critical_flag_out = 1'b1;
                                 branch_addr_out = mtvec_data_in;
                             end
                             12'h302: begin //mret
                                 privilege_we = 1'b1;
                                 mstatus_we = 1'b1;
                                 branch_flag_out = 1'b1;
+                                critical_flag_out = 1'b1;
                                 branch_addr_out = mepc_data_in;
                             end
                             default: begin
