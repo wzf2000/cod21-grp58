@@ -155,7 +155,12 @@ always @(*) begin
                         endcase
                     end
                     `OP_L: begin
-                        ram_addr = mem_addr_in;
+                        if(translation) begin
+                            ram_addr = {tlb_physical,virtual_addr[11:0]};
+                        end
+                        else begin
+                            ram_addr = mem_addr_in;
+                        end
                         ram_be_n = mem_be_n_in;
                         ram_ce_n = 1'b0;
                         ram_we_n = 1'b1;
