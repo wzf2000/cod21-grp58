@@ -43,6 +43,7 @@ module ppl_id(
     output reg branch_flag_out,
     output reg critical_flag_out,
     output reg[31:0] branch_addr_out,
+    output reg tlb_flush,
 
     //get CSR value from CSR file
     input wire [31:0] mtvec_data_in,
@@ -124,6 +125,7 @@ always @(*) begin
         branch_flag_out = 0;
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
+        tlb_flush = 0;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
     end
     else begin
@@ -143,6 +145,7 @@ always @(*) begin
         branch_flag_out = 0;
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
+        tlb_flush = 0;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
 
         //timer interrupt
@@ -354,7 +357,8 @@ always @(*) begin
                             end
                             default: begin
                                 if(instr[31:25]==7'b0001001) begin
-                                    //TODO: flush TLB
+                                    //flush TLB
+                                    tlb_flush = 1'b1;
                                     alu_opcode = `OP_NOP;
                                     alu_funct3 = `FUNCT3_NOP;
                                     alu_funct7 = `FUNCT7_NOP;

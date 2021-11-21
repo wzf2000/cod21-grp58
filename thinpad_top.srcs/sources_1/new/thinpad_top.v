@@ -281,6 +281,8 @@ wire id_mip_we;
 wire id_satp_we;
 wire id_priv_we;
 
+wire id_tlb_flush;
+
 wire[31:0] ex_mtvec_data;
 wire[31:0] ex_mscratch_data;
 wire[31:0] ex_mepc_data;
@@ -429,6 +431,8 @@ PC_reg pc_reg(
     .satp(satp_o),
     .priv(privilege_o),
 
+    .tlb_flush(id_tlb_flush),
+
     .pc_ram_addr(if_addr_out),
     .pc(if_pc_out),
     .pc_ram_en(if_en_out),
@@ -510,6 +514,7 @@ ppl_id id(
     .branch_flag_out(id_branch_flag_out),
     .critical_flag_out(id_critical_flag_out),
     .branch_addr_out(id_branch_addr_out),
+    .tlb_flush(id_tlb_flush),
 
     .mtvec_data_in(mtvec_o),
     .mscratch_data_in(mscratch_o),
@@ -740,6 +745,8 @@ ppl_mem mem(
     .satp(satp_rd),
     .priv(priv_rd),
     .mem_phase(ex_mem_phase),
+
+    .tlb_flush(id_tlb_flush),
     
     .ctrl_back(ctrl_back),
     .mem_phase_back(mem_phase_back),
