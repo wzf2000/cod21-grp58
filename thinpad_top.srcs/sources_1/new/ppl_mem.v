@@ -40,16 +40,16 @@ module ppl_mem(
     output wire stallreq // go to "thinpad_top"
 );
 
-
-wire rw = (alu_opcode_in == `OP_S)||(alu_opcode_in == `OP_L);
-wire translation = rw & (~priv[0]) & satp[31];
-assign stallreq = translation & (~mem_phase[1]); //00:level 1 table, 01:level 2 table, 10: physical addr
-assign ctrl_back = translation & (~mem_phase[1]);
-
 //TLB
 reg tlb_valid;
 reg [19:0] tlb_virtual;
 reg [19:0] tlb_physical;
+
+wire rw = (alu_opcode_in == `OP_S)||(alu_opcode_in == `OP_L);
+wire translation = rw & (~priv[0]) & satp[31];
+wire tlb_hit = tlb_valid && (tlb_virtual == virtual_addr[31:12]);
+assign stallreq = translation & (~mem_phase[1]); //00:level 1 table, 01:level 2 table, 10: physical addr
+assign ctrl_back = translation & (~mem_phase[1]) & (~tlb_hit);
 
 always @(*) begin
     if (rst) begin
@@ -81,32 +81,26 @@ always @(*) begin
         mem_addr_back = 32'b0;
         regd_en_out = regd_en_in;
         if (mem_en_in) begin
-            if(translation & (~mem_phase[1]) & (~mem_phase[0]))begin // 00: level 1 table
+            if(translation & (~mem_phase[1]) & (~mem_phase[0]) & (~tlb_hit))begin // 00: level 1 table
                 regd_en_out = 0;
                 ram_addr = {satp[19:0],virtual_addr[31:22],2'b00}; //each PTE is 4bytes
                 ram_be_n = 4'b0;
                 ram_ce_n = 1'b0;
                 ram_we_n = 1'b1;
                 ram_oe_n = 1'b0;
-                if(tlb_valid && (tlb_virtual == virtual_addr[31:12])) begin //TLB hit
-                    mem_addr_back <= {tlb_physical,virtual_addr[11:0]};
+                if (read_data[3]|read_data[2]|read_data[1]) begin //r w x is not all zero, PTE is leaf
+                    mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
+                    tlb_virtual = virtual_addr[31:12];
+                    tlb_physical = read_data[29:10];
+                    tlb_valid = ~tlb_flush;
                     mem_phase_back = 2'b10;
                 end
-                else begin //TLB miss
-                    if (read_data[3]|read_data[2]|read_data[1]) begin //r w x is not all zero, PTE is leaf
-                        mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
-                        tlb_virtual <= virtual_addr[31:12];
-                        tlb_physical <= read_data[29:10];
-                        tlb_valid <= ~tlb_flush;
-                        mem_phase_back = 2'b10;
-                    end
-                    else begin //r w is is all zero, need to get level 2 table
-                        mem_addr_back = {read_data[29:10],virtual_addr[21:12],2'b00};
-                        mem_phase_back = 2'b01;
-                    end
+                else begin //r w is is all zero, need to get level 2 table
+                    mem_addr_back = {read_data[29:10],virtual_addr[21:12],2'b00};
+                    mem_phase_back = 2'b01;
                 end
             end
-            else if(translation & (~mem_phase[1]) & mem_phase[0])begin // 01: level 2 table
+            else if(translation & (~mem_phase[1]) & mem_phase[0] & (~tlb_hit))begin // 01: level 2 table
                 regd_en_out = 0;
                 ram_addr = mem_addr_in;
                 ram_be_n = 4'b0;
@@ -114,16 +108,21 @@ always @(*) begin
                 ram_we_n = 1'b1;
                 ram_oe_n = 1'b0;
                 mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
-                tlb_virtual <= virtual_addr[31:12];
-                tlb_physical <= read_data[29:10];
-                tlb_valid <= ~tlb_flush;
+                tlb_virtual = virtual_addr[31:12];
+                tlb_physical = read_data[29:10];
+                tlb_valid = ~tlb_flush;
                 mem_phase_back = 2'b10;
             end
             else begin // doesn't need translation or translation done (phase=10)
                 regd_en_out = regd_en_in;
                 case (alu_opcode_in)
                     `OP_S: begin
-                        ram_addr = mem_addr_in;
+                        if(translation) begin
+                            ram_addr = {tlb_physical,virtual_addr[11:0]};
+                        end
+                        else begin
+                            ram_addr = mem_addr_in;
+                        end
                         ram_be_n = mem_be_n_in;
                         ram_ce_n = 1'b0;
                         ram_we_n = 1'b0;
