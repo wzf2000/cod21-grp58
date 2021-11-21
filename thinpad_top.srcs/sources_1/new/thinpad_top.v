@@ -341,6 +341,9 @@ wire[4:0] mem_regd_addr_in;
 wire[31:0] mem_data_in;
 wire[31:0] mem_addr_in;
 wire[3:0] mem_be_n_in;
+wire tlb_valid_pass;
+wire[19:0] tlb_virtual_pass;
+wire[19:0] tlb_physical_pass;
 
 // SRAM controller
 wire[31:0] mem_read_data_in;
@@ -358,6 +361,9 @@ wire[31:0] mem_data_out;
 wire ctrl_back;
 wire[1:0] mem_phase_back;
 wire[31:0] mem_addr_back;
+wire tlb_valid_update;
+wire[19:0] tlb_virtual_update;
+wire[19:0] tlb_physical_update;
 
 // WB stage input
 wire wb_regd_en_in;
@@ -712,6 +718,9 @@ ppl_ex_mem ex_mem(
     .ctrl(ctrl_back),
     .mem_phase_retro(mem_phase_back),
     .mem_addr_retro(mem_addr_back),
+    .tlb_valid_update(tlb_valid_update),
+    .tlb_virtual_update(tlb_virtual_update),
+    .tlb_physical_update(tlb_physical_update),
 
     .mem_alu_opcode(mem_alu_opcode_in),
     .mem_alu_funct3(mem_alu_funct3_in),
@@ -724,7 +733,11 @@ ppl_ex_mem ex_mem(
     .mem_be_n(mem_be_n_in),
     .satp_rd(satp_rd),
     .priv_rd(priv_rd),
-    .mem_phase(ex_mem_phase)
+    .mem_phase(ex_mem_phase),
+
+    .tlb_valid(tlb_valid_pass),
+    .tlb_virtual(tlb_virtual_pass),
+    .tlb_physical(tlb_physical_pass)
 );
 
 // MEM stage
@@ -745,6 +758,9 @@ ppl_mem mem(
     .satp(satp_rd),
     .priv(priv_rd),
     .mem_phase(ex_mem_phase),
+    .tlb_valid_in(tlb_valid_pass),
+    .tlb_virtual_in(tlb_virtual_pass),
+    .tlb_physical_in(tlb_physical_pass),
 
     .tlb_flush(id_tlb_flush),
     
@@ -765,7 +781,10 @@ ppl_mem mem(
     .regd_en_out(mem_regd_en_out),
     .data_out(mem_data_out),
 
-    .stallreq(stallreq_mem)
+    .stallreq(stallreq_mem),
+    .tlb_valid_update(tlb_valid_update),
+    .tlb_virtual_update(tlb_virtual_update),
+    .tlb_physical_update(tlb_physical_update)
 );
 
 // MEM/WB stage

@@ -1,3 +1,4 @@
+`default_nettype none
 `timescale 1ns / 1ps
 `include "opcodes.vh"
 
@@ -20,6 +21,9 @@ module ppl_ex_mem(
     input wire ctrl, //ctrl=1, update according to mem; ctrl=0, update according to ex.
     input wire[1:0] mem_phase_retro, //retro signals are from ppl_mem.v (combinatorial)
     input wire[31:0] mem_addr_retro,
+    input wire tlb_valid_update,
+    input wire tlb_virtual_update,
+    input wire tlb_physical_update,
 
     output reg[6:0] mem_alu_opcode,
     output reg[2:0] mem_alu_funct3,
@@ -32,7 +36,11 @@ module ppl_ex_mem(
     output reg[3:0] mem_be_n,
     output reg[31:0] satp_rd,
     output reg[1:0] priv_rd,
-    output reg[1:0] mem_phase
+    output reg[1:0] mem_phase,
+    //TLB
+    output reg tlb_valid,
+    output reg [19:0] tlb_virtual,
+    output reg [19:0] tlb_physical
 );
 
 always @(posedge clk or posedge rst) begin
@@ -49,6 +57,9 @@ always @(posedge clk or posedge rst) begin
         satp_rd <= 32'b0;
         priv_rd <= 2'b0;
         mem_phase <= 2'b0;
+        tlb_valid <= 0;
+        tlb_virtual <= 20'b0;
+        tlb_physical <= 20'b0;
     end
     // else if (stall) begin
     //     mem_alu_opcode <= mem_alu_opcode;
@@ -61,6 +72,9 @@ always @(posedge clk or posedge rst) begin
     //     mem_be_n <= mem_be_n;
     // end
     else begin
+        tlb_valid <= tlb_valid_update;
+        tlb_virtual <= tlb_virtual_update;
+        tlb_physical <= tlb_physical_update;
         if(ctrl) begin
             mem_alu_opcode <= mem_alu_opcode;
             mem_alu_funct3 <= mem_alu_funct3;

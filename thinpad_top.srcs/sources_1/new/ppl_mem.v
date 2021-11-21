@@ -1,3 +1,4 @@
+`default_nettype none
 `timescale 1ns / 1ps
 `include "opcodes.vh"
 
@@ -18,6 +19,9 @@ module ppl_mem(
     input wire[1:0] priv,
     input wire[1:0] mem_phase,
 
+    input wire tlb_valid_in,
+    input wire [19:0] tlb_virtual_in,
+    input wire [19:0] tlb_physical_in,
     input wire tlb_flush,
 
     output wire ctrl_back,
@@ -37,17 +41,16 @@ module ppl_mem(
     output reg regd_en_out,
     output reg[31:0] data_out,
 
-    output wire stallreq // go to "thinpad_top"
+    output wire stallreq, // go to "thinpad_top"
+    output reg tlb_valid_update,
+    output reg [19:0] tlb_virtual_update,
+    output reg [19:0] tlb_physical_update
 );
 
-//TLB
-reg tlb_valid;
-reg [19:0] tlb_virtual;
-reg [19:0] tlb_physical;
 
 wire rw = (alu_opcode_in == `OP_S)||(alu_opcode_in == `OP_L);
 wire translation = rw & (~priv[0]) & satp[31];
-wire tlb_hit = tlb_valid && (tlb_virtual == virtual_addr[31:12]);
+wire tlb_hit = tlb_valid_in && (tlb_virtual_in == virtual_addr[31:12]);
 assign stallreq = translation & (~mem_phase[1]) & (~tlb_hit); //00:level 1 table, 01:level 2 table, 10: physical addr
 assign ctrl_back = translation & (~mem_phase[1]) & (~tlb_hit);
 
@@ -64,9 +67,9 @@ always @(*) begin
         ram_oe_n = 1;
         mem_phase_back = 2'b0;
         mem_addr_back = 32'b0;
-        tlb_valid = 0;
-        tlb_virtual = 20'b0;
-        tlb_physical = 20'b0;
+        tlb_valid_update = 0;
+        tlb_virtual_update = 20'b0;
+        tlb_physical_update = 20'b0;
     end
     else begin
         regd_addr_out = regd_addr_in;
@@ -80,6 +83,9 @@ always @(*) begin
         mem_phase_back = 2'b0;
         mem_addr_back = 32'b0;
         regd_en_out = regd_en_in;
+        tlb_valid_update = tlb_valid_in;
+        tlb_virtual_update = tlb_virtual_in;
+        tlb_physical_update = tlb_physical_in;
         if (mem_en_in) begin
             if(translation & (~mem_phase[1]) & (~mem_phase[0]) & (~tlb_hit))begin // 00: level 1 table
                 regd_en_out = 0;
@@ -90,9 +96,9 @@ always @(*) begin
                 ram_oe_n = 1'b0;
                 if (read_data[3]|read_data[2]|read_data[1]) begin //r w x is not all zero, PTE is leaf
                     mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
-                    tlb_virtual = virtual_addr[31:12];
-                    tlb_physical = read_data[29:10];
-                    tlb_valid = ~tlb_flush;
+                    tlb_virtual_update = virtual_addr[31:12];
+                    tlb_physical_update = read_data[29:10];
+                    tlb_valid_update = ~tlb_flush;
                     mem_phase_back = 2'b10;
                 end
                 else begin //r w is is all zero, need to get level 2 table
@@ -108,9 +114,9 @@ always @(*) begin
                 ram_we_n = 1'b1;
                 ram_oe_n = 1'b0;
                 mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
-                tlb_virtual = virtual_addr[31:12];
-                tlb_physical = read_data[29:10];
-                tlb_valid = ~tlb_flush;
+                tlb_virtual_update = virtual_addr[31:12];
+                tlb_physical_update = read_data[29:10];
+                tlb_valid_update = ~tlb_flush;
                 mem_phase_back = 2'b10;
             end
             else begin // doesn't need translation or translation done (phase=10)
@@ -118,7 +124,7 @@ always @(*) begin
                 case (alu_opcode_in)
                     `OP_S: begin
                         if(translation) begin
-                            ram_addr = {tlb_physical,virtual_addr[11:0]};
+                            ram_addr = {tlb_physical_in,virtual_addr[11:0]};
                         end
                         else begin
                             ram_addr = mem_addr_in;
@@ -156,7 +162,7 @@ always @(*) begin
                     end
                     `OP_L: begin
                         if(translation) begin
-                            ram_addr = {tlb_physical,virtual_addr[11:0]};
+                            ram_addr = {tlb_physical_in,virtual_addr[11:0]};
                         end
                         else begin
                             ram_addr = mem_addr_in;
