@@ -76,7 +76,7 @@ module ppl_id(
     output wire [31:0] mie_data_out,
     output wire [31:0] mip_data_out,
     output wire [31:0] satp_data_out,
-    output wire [2:0] privilege_data_out,
+    output wire [1:0] privilege_data_out,
 
     output wire stallreq
 );

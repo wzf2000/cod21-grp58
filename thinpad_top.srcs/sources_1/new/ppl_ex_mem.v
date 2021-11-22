@@ -22,8 +22,8 @@ module ppl_ex_mem(
     input wire[1:0] mem_phase_retro, //retro signals are from ppl_mem.v (combinatorial)
     input wire[31:0] mem_addr_retro,
     input wire tlb_valid_update,
-    input wire tlb_virtual_update,
-    input wire tlb_physical_update,
+    input wire [19:0] tlb_virtual_update,
+    input wire [19:0] tlb_physical_update,
 
     output reg[6:0] mem_alu_opcode,
     output reg[2:0] mem_alu_funct3,
