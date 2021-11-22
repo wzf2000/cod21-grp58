@@ -14,6 +14,8 @@ module mtimer
     output reg interrupt
 );
 
+reg [7:0] internal_counter;
+
 always @(*) begin
     if(mtime > mtimecmp) interrupt = 1'b1;
     else interrupt = 1'b0;
@@ -23,13 +25,23 @@ always @(posedge clk or posedge rst) begin
     if(rst) begin
         mtime <= 63'b0;
         mtimecmp <= {1'b1,63'b0};
+        internal_counter <= 8'b0;
     end
     else begin
         if(mtime_we) begin
             if(upper) mtime <= {wdata,mtime[31:0]};
             else mtime <= {mtime[63:32],wdata};
         end
-        else mtime <= mtime + 1;
+        else begin
+            if (internal_counter >= 59) begin
+                internal_counter <= 8'b0;
+                mtime <= mtime + 1;
+            end
+            else begin
+                internal_counter <= internal_counter + 1;
+                mtime <= mtime;
+            end
+        end
         if(mtimecmp_we) begin
             if(upper) mtimecmp <= {wdata,mtimecmp[31:0]};
             else mtimecmp <= {mtimecmp[63:32],wdata};
