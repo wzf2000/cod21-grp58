@@ -134,14 +134,30 @@ always @(*) begin
             `OP_R: begin
                 case (alu_funct3_in)
                     `FUNCT3_ADD: begin
-                        data_out = regs1_in + regs2_in;
+                        if (alu_funct7_in == `FUNCT7_ADD)
+                            data_out = regs1_in + regs2_in;
+                        else if (alu_funct7_in == `FUNCT7_SUB)
+                            data_out = regs1_in - regs2_in;
                     end
                     `FUNCT3_AND: begin
                         data_out = regs1_in & regs2_in;
                     end
+                    `FUNCT3_SLT: begin
+                        if ($signed(regs1_in) < $signed(regs2_in)) data_out = 1;
+                        else data_out = 0;
+                    end
                     `FUNCT3_SLTU: begin
                         if (regs1_in < regs2_in) data_out = 1;
                         else data_out = 0;
+                    end
+                    `FUNCT3_SLL: begin
+                        data_out = regs1_in << regs2_in;
+                    end
+                    `FUNCT3_SRL: begin
+                        if (alu_funct7_in == `FUNCT7_SRL)
+                            data_out = regs1_in >> regs2_in;
+                        else if (alu_funct7_in == `FUNCT7_SRA)
+                            data_out = $signed(regs1_in) >> regs2_in;
                     end
                     `FUNCT3_XOR: begin
                         case (alu_funct7_in)
@@ -186,7 +202,19 @@ always @(*) begin
                         data_out = regs1_in << regs2_in;
                     end
                     `FUNCT3_SRLI: begin
-                        data_out = regs1_in >> regs2_in;
+                        if (alu_funct7_in == `FUNCT7_SRLI)
+                            data_out = regs1_in >> regs2_in;
+                        else if (alu_funct7_in == `FUNCT7_SRAI)
+                            data_out = $signed(regs1_in) >>> regs2_in;
+                    end
+                    `FUNCT3_SLTI: begin
+                        data_out = $signed(regs1_in) < $signed(regs2_in);
+                    end
+                    `FUNCT3_SLTIU: begin
+                        data_out = regs1_in < regs2_in;
+                    end
+                    `FUNCT3_XORI: begin
+                        data_out = regs1_in ^ regs2_in;
                     end
                 endcase
             end
@@ -214,6 +242,18 @@ always @(*) begin
                                 mem_be_n_out = 4'b0111;
                         endcase
                     end
+                    `FUNCT3_SH: begin
+                        case (regs1_in[1:0] + mem_addr_in[1:0])
+                            2'b00:
+                                mem_be_n_out = 4'b1100;
+                            2'b01:
+                                mem_be_n_out = 4'b1100;
+                            2'b10:
+                                mem_be_n_out = 4'b0011;
+                            2'b11:
+                                mem_be_n_out = 4'b0011;
+                        endcase
+                    end
                 endcase
             end
             `OP_L: begin
@@ -225,7 +265,7 @@ always @(*) begin
                     `FUNCT3_LW: begin
                         mem_be_n_out = 4'b0;
                     end
-                    `FUNCT3_LB: begin
+                    `FUNCT3_LB, `FUNCT3_LBU: begin
                         case (regs1_in[1:0] + mem_addr_in[1:0])
                             2'b00:
                                 mem_be_n_out = 4'b1110;
@@ -235,6 +275,18 @@ always @(*) begin
                                 mem_be_n_out = 4'b1011;
                             2'b11:
                                 mem_be_n_out = 4'b0111;
+                        endcase
+                    end
+                    `FUNCT3_LH, `FUNCT3_LHU: begin
+                        case (regs1_in[1:0] + mem_addr_in[1:0])
+                            2'b00:
+                                mem_be_n_out = 4'b1100;
+                            2'b01:
+                                mem_be_n_out = 4'b1100;
+                            2'b10:
+                                mem_be_n_out = 4'b0011;
+                            2'b11:
+                                mem_be_n_out = 4'b0011;
                         endcase
                     end
                 endcase

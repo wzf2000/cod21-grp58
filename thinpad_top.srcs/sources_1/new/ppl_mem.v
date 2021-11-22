@@ -171,32 +171,57 @@ always @(*) begin
                         ram_ce_n = 1'b0;
                         ram_we_n = 1'b1;
                         ram_oe_n = 1'b0;
-                        case (mem_be_n_in)
-                            4'b0000: begin
-                                data_out = read_data;
-                            end
-                            4'b1110: begin
-                                data_out = {{24{read_data[7]}}, read_data[7:0]};
-                            end
-                            4'b1101: begin
-                                data_out = {{24{read_data[15]}}, read_data[15:8]};
-                            end
-                            4'b1011: begin
-                                data_out = {{24{read_data[23]}}, read_data[23:16]};
-                            end
-                            4'b0111: begin
-                                data_out = {{24{read_data[31]}}, read_data[31:24]};
-                            end
-                            4'b1100: begin
-                                data_out = {{16{read_data[15]}}, read_data[15:0]};
-                            end
-                            4'b1001: begin
-                                data_out = {{16{read_data[23]}}, read_data[23:8]};
-                            end
-                            4'b0011: begin
-                                data_out = {{16{read_data[31]}}, read_data[31:16]};
-                            end
-                        endcase
+                        if (alu_funct3_in == `FUNCT3_LB && alu_funct3_in == `FUNCT3_LH && alu_funct3_in == `FUNCT3_LW)
+                            case (mem_be_n_in)
+                                4'b0000: begin
+                                    data_out = read_data;
+                                end
+                                4'b1110: begin
+                                    data_out = {{24{read_data[7]}}, read_data[7:0]};
+                                end
+                                4'b1101: begin
+                                    data_out = {{24{read_data[15]}}, read_data[15:8]};
+                                end
+                                4'b1011: begin
+                                    data_out = {{24{read_data[23]}}, read_data[23:16]};
+                                end
+                                4'b0111: begin
+                                    data_out = {{24{read_data[31]}}, read_data[31:24]};
+                                end
+                                4'b1100: begin
+                                    data_out = {{16{read_data[15]}}, read_data[15:0]};
+                                end
+                                4'b1001: begin
+                                    data_out = {{16{read_data[23]}}, read_data[23:8]};
+                                end
+                                4'b0011: begin
+                                    data_out = {{16{read_data[31]}}, read_data[31:16]};
+                                end
+                            endcase
+                        else if (alu_funct3_in == `FUNCT3_LBU && alu_funct3_in == `FUNCT3_LHU)
+                            case (mem_be_n_in)
+                                4'b1110: begin
+                                    data_out = {24'b0, read_data[7:0]};
+                                end
+                                4'b1101: begin
+                                    data_out = {24'b0, read_data[15:8]};
+                                end
+                                4'b1011: begin
+                                    data_out = {24'b0, read_data[23:16]};
+                                end
+                                4'b0111: begin
+                                    data_out = {24'b0, read_data[31:24]};
+                                end
+                                4'b1100: begin
+                                    data_out = {16'b0, read_data[15:0]};
+                                end
+                                4'b1001: begin
+                                    data_out = {16'b0, read_data[23:8]};
+                                end
+                                4'b0011: begin
+                                    data_out = {16'b0, read_data[31:16]};
+                                end
+                            endcase
                     end
                     default: begin
                         ram_addr = 32'b0;

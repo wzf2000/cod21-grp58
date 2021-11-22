@@ -167,17 +167,39 @@ always @(*) begin
                 regs1_en = 1;
                 regs2_en = 1;
                 case (funct3)
-                    `FUNCT3_ADD, `FUNCT3_AND: begin
+                    `FUNCT3_AND, `FUNCT3_SLT, `FUNCT3_SLTU, `FUNCT3_SLL: begin
                         alu_opcode = opcode;
                         alu_funct3 = funct3;
                         alu_funct7 = funct7;
                         reg_write = 1;
                     end
-                    `FUNCT3_SLTU: begin
-                        alu_opcode = opcode;
-                        alu_funct3 = funct3;
-                        alu_funct7 = funct7;
-                        reg_write = 1;
+                    `FUNCT3_SRL: begin
+                        case (funct7)
+                            `FUNCT7_SRL, `FUNCT7_SRA: begin
+                                alu_opcode = opcode;
+                                alu_funct3 = funct3;
+                                alu_funct7 = funct7;
+                                reg_write = 1;
+                            end
+                            default: begin
+                                regs1_en = 0;
+                                regs2_en = 0;
+                            end
+                        endcase
+                    end
+                    `FUNCT3_ADD: begin
+                        case (funct7)
+                            `FUNCT7_ADD, `FUNCT7_SUB: begin
+                                alu_opcode = opcode;
+                                alu_funct3 = funct3;
+                                alu_funct7 = funct7;
+                                reg_write = 1;
+                            end
+                            default: begin
+                                regs1_en = 0;
+                                regs2_en = 0;
+                            end
+                        endcase
                     end
                     `FUNCT3_XOR: begin
                         case (funct7)
@@ -216,7 +238,7 @@ always @(*) begin
             `OP_I: begin
                 regs1_en = 1;
                 case (funct3)
-                    `FUNCT3_ADDI, `FUNCT3_ANDI, `FUNCT3_ORI: begin
+                    `FUNCT3_ADDI, `FUNCT3_ANDI, `FUNCT3_ORI, `FUNCT3_SLTI, `FUNCT3_SLTIU, `FUNCT3_XORI: begin
                         alu_opcode = opcode;
                         alu_funct3 = funct3;
                         alu_funct7 = funct7;
@@ -260,12 +282,16 @@ always @(*) begin
                 regs2_en = 1;
                 imm = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
                 case (funct3)
-                    `FUNCT3_BEQ, `FUNCT3_BNE: begin
+                    `FUNCT3_BEQ, `FUNCT3_BNE, `FUNCT3_BLT, `FUNCT3_BGE, `FUNCT3_BLTU, `FUNCT3_BGEU: begin
                         if (ex_alu_opcode_in == `OP_S || ex_alu_opcode_in == `OP_L) begin
                             stall_req_LSBJ = 1;
                         end
                         else if (funct3 == `FUNCT3_BEQ && regs1_out == regs2_out
-                              || funct3 == `FUNCT3_BNE && regs1_out != regs2_out) begin
+                              || funct3 == `FUNCT3_BNE && regs1_out != regs2_out
+                              || funct3 == `FUNCT3_BLT && $signed(regs1_out) < $signed(regs2_out)
+                              || funct3 == `FUNCT3_BGE && $signed(regs1_out) >= $signed(regs2_out)
+                              || funct3 == `FUNCT3_BLTU && regs1_out < regs2_out
+                              || funct3 == `FUNCT3_BGEU && regs1_out >= regs2_out) begin
                             branch_flag_out = 1;
                             branch_addr_out = pc_in + {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
                         end
