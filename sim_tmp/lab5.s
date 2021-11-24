@@ -2,40 +2,38 @@
     .global _start
     .text
 _start:
-    li t0, 0
-    li t2, 0
-    li t3, 100
-    ori t3, zero, 100
-    li t4, 0x80000100
-    li t5, 0x10000000
-loop:
-    addi t0, t0, 1
-    add t2, t2, t0
-    beq t0, t3, out
-    beq zero, zero, loop
-out:
-    sw t2, 0(t4)
-    sw t0, 4(t4)
-    lw a1, 0(t4)
-    lw a2, 4(t4)
-    sw a1, 8(t4)
-    sw a2, 12(t4)
-    li a0, 100
-    jal write
-    li a0, 111
-    jal write
-    li a0, 110
-    jal write
-    li a0, 101
-    jal write
-    li a0, 33
-    jal write
-    jal end
-write:
-    lb t1, %lo(5)(t5)
-    andi t1, t1, 0x20
-    beq t1, zero, write
-    sb a0, %lo(0)(t5)
-    jr ra
+    li t0, 0x80080001 #root(0x80001000)PPN=0x80001, mode=1 => 0x80000000+0x00080001
+	csrw satp, t0
+	li a0, 0x20000811 #0x80002000 >> 2 + "UV"
+	li t0, 0x80001800 #for 0x800XXXXX, VPN1=0b1000000000=2^9, offset=0x800=2^11, sum=0x80001000+0x800
+	sw a0, 0(t0) #points to 0x80002000
+	li a0, 0x2000101b #0x80004000 >> 2 + "UXRV"
+	li t0, 0x80002000 #for 0x80003XXX, VPN0=3, offset=c; for 0x80000XXX, VPN0=0, offset=0;
+	sw a0, 12(t0)
+	li a0, 0x2000001f #0x80000000 >> 2 + "UXWRV"
+	sw a0, 0(t0)
+	li s1, 0x80000070 #TODO change this address
+	csrw mepc, s1
+	li a0, 0
+	csrw mstatus, a0
+	li a0, 100
+	li t0, 0x80004000
+	sw a0, 0(t0)
+	li a5, -1
+	li a5, -2
+	li a5, -3
+	mret
+	li a5, -4
+	li a5, -5
+	li a5, -6
+	li t0, 0x80003000
+	lw a1, 0(t0)
+	li a2, 1
+	li a3, 2
+	li a4, 3
+	sw a2, 0(t0)
+	li a5, 4
+	li a6, 5
+	li a7, 6
 end:
     beq zero, zero, end

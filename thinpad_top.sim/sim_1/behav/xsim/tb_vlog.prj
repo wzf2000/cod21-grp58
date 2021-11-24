@@ -1,0 +1,30 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  --include "../../../../thinpad_top.srcs/sources_1/new" --include "../../../../thinpad_top.srcs/sim_1/new/include" \
+"../../../../thinpad_top.srcs/sources_1/ip/pll_example/pll_example_sim_netlist.v" \
+"../../../../thinpad_top.srcs/sim_1/new/28F640P30.v" \
+"../../../../thinpad_top.srcs/sources_1/new/PC_reg.v" \
+"../../../../thinpad_top.srcs/sources_1/new/SEG7_LUT.v" \
+"../../../../thinpad_top.srcs/sources_1/new/SRAM.v" \
+"../../../../thinpad_top.srcs/sim_1/new/clock.v" \
+"../../../../thinpad_top.srcs/sim_1/new/cpld_model.v" \
+"../../../../thinpad_top.srcs/sources_1/new/csr.v" \
+"../../../../thinpad_top.srcs/sim_1/new/flag_sync_cpld.v" \
+"../../../../thinpad_top.srcs/sources_1/new/mtimer.v" \
+"../../../../thinpad_top.srcs/sources_1/new/ppl_ctrl.v" \
+"../../../../thinpad_top.srcs/sources_1/new/ppl_ex_mem.v" \
+"../../../../thinpad_top.srcs/sources_1/new/ppl_id.v" \
+"../../../../thinpad_top.srcs/sources_1/new/ppl_if_id.v" \
+"../../../../thinpad_top.srcs/sources_1/new/ppl_mem.v" \
+"../../../../thinpad_top.srcs/sources_1/new/ppl_mem_wb.v" \
+"../../../../thinpad_top.srcs/sources_1/new/regfile.v" \
+"../../../../thinpad_top.srcs/sim_1/new/sram_model.v" \
+"../../../../thinpad_top.srcs/sources_1/new/thinpad_top.v" \
+
+sv xil_defaultlib  --include "../../../../thinpad_top.srcs/sources_1/new" --include "../../../../thinpad_top.srcs/sim_1/new/include" \
+"../../../../thinpad_top.srcs/sim_1/new/tb.sv" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

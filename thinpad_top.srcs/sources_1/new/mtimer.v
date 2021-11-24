@@ -23,7 +23,7 @@ end
 
 always @(posedge clk or posedge rst) begin
     if(rst) begin
-        mtime <= 63'b0;
+        mtime <= 64'b0;
         mtimecmp <= {1'b1,63'b0};
         internal_counter <= 8'b0;
     end
