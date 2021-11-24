@@ -18,6 +18,8 @@ out:
     sw t0, 4(t4)
     lw a1, 0(t4)
     lw a2, 4(t4)
+    sw a1, 8(t4)
+    sw a2, 12(t4)
     li a0, 100
     jal write
     li a0, 111
