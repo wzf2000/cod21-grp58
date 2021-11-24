@@ -18,6 +18,8 @@ module ppl_ex(
     input wire mem_en_in,
     input wire[31:0] mem_addr_in,
     input wire[31:0] ret_addr_in,
+
+    output reg[31:0] pc_out,
     
     input wire [31:0] mtvec_in,
     input wire [31:0] mscratch_in,
@@ -68,7 +70,9 @@ module ppl_ex(
     output reg[3:0] mem_be_n_out,
 
     output reg[31:0] data_out,
-    output reg stall_req
+    output reg stall_req,
+    input wire excpreq_in,
+    output reg excpreq
 );
 
 assign alu_opcode_out = alu_opcode_in;
@@ -78,7 +82,9 @@ assign regd_en_out = regd_en_in;
 
 always @(*) begin
     if (rst) begin
+        pc_out = 32'b0;
         stall_req = 0;
+        excpreq = 0;
         data_out = 32'b0;
         mem_en_out = 0;
         mem_addr_out = 32'b0;
@@ -105,7 +111,9 @@ always @(*) begin
         priv_out = 0;
     end
     else begin
+        pc_out = pc_in;
         stall_req = 0;
+        excpreq = excpreq_in;
         data_out = 32'b0;
         mem_en_out = 0;
         mem_addr_out = 32'b0;
@@ -300,7 +308,7 @@ always @(*) begin
             `OP_CSR: begin
                 // todo: CSR instruction
                 case (alu_funct3_in)
-                    `FUNCT3_CSRRC: begin
+                    `FUNCT3_CSRRC, `FUNCT3_CSRRCI: begin
                         case (alu_funct_csr_in)
                             12'h305: begin
                                 data_out = mtvec_in;
@@ -338,7 +346,7 @@ always @(*) begin
                             end
                         endcase
                     end
-                    `FUNCT3_CSRRS: begin
+                    `FUNCT3_CSRRS, `FUNCT3_CSRRSI: begin
                         case (alu_funct_csr_in)
                             12'h305: begin
                                 data_out = mtvec_in;
@@ -376,7 +384,7 @@ always @(*) begin
                             end
                         endcase
                     end
-                    `FUNCT3_CSRRW: begin
+                    `FUNCT3_CSRRW, `FUNCT3_CSRRWI: begin
                         case (alu_funct_csr_in)
                             12'h305: begin
                                 data_out = mtvec_in;
@@ -420,7 +428,7 @@ always @(*) begin
                                 priv_out = 2'b11;
                                 mstatus_out = {mstatus_in[31:13],priv_in,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],1'b0,mstatus_in[2:0]};
                                 mepc_out = pc_in;
-                                mcause_out = {1'b0, 27'b0, 4'b1000}; //environment call from U-mode. From U mode?
+                                mcause_out = {1'b0, 27'b0, 4'b10, priv_in}; //environment call from U-mode. From U mode?
                             end
                             12'h001: begin //ebreak
                                 priv_out = 2'b11;
@@ -436,7 +444,7 @@ always @(*) begin
                                 priv_out = 2'b11;
                                 mstatus_out = {mstatus_in[31:13],priv_in,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],1'b0,mstatus_in[2:0]};
                                 mepc_out = pc_in;
-                                mcause_out = {1'b0, 27'b0, 4'b0111};
+                                mcause_out = {1'b1, 27'b0, 4'b0111};
                             end
                             default: begin
                             end

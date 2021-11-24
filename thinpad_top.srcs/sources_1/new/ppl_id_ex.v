@@ -7,6 +7,8 @@ module ppl_id_ex(
     input wire rst,
 
     input wire stall,
+    output reg excpreq_out,
+    input wire[3:0] excp,
 
     input wire[31:0] id_pc,
     input wire [6:0] id_alu_opcode,
@@ -109,6 +111,8 @@ always @(posedge clk or posedge rst) begin
         ex_mip_data <= 32'b0;
         ex_satp_data <= 32'b0;
         ex_priv_data <= 2'b0;
+
+        excpreq_out <= 0;
     end
     else if (stall) begin
         ex_pc <= 32'b0;
@@ -133,6 +137,34 @@ always @(posedge clk or posedge rst) begin
         ex_mip_we <= 0;
         ex_priv_we <= 0;
         ex_satp_we <= 0;
+        
+        excpreq_out <= 0;
+    end
+    else if (excp[2]) begin
+        ex_pc <= 32'b0;
+        ex_alu_opcode <= `OP_NOP;
+        ex_alu_funct3 <= `FUNCT3_NOP;
+        ex_alu_funct7 <= `FUNCT7_NOP;
+        ex_alu_funct_csr <= 0;
+        ex_regs1 <= 32'b0;
+        ex_regs2 <= 32'b0;
+        ex_regd_addr <= 5'b0;
+        ex_regd_en <= 0;
+        ex_ret_addr <= 32'b0;
+        ex_mem_en <= 0;
+        ex_mem_addr <= 32'b0;
+
+        ex_mtvec_we <= 0;
+        ex_mscratch_we <= 0;
+        ex_mepc_we <= 0;
+        ex_mcause_we <= 0;
+        ex_mstatus_we <= 0;
+        ex_mie_we <= 0;
+        ex_mip_we <= 0;
+        ex_priv_we <= 0;
+        ex_satp_we <= 0;
+        
+        excpreq_out <= 0;
     end
     else begin
         ex_pc <= id_pc;
@@ -167,6 +199,8 @@ always @(posedge clk or posedge rst) begin
         ex_mip_we <= id_mip_we;
         ex_priv_we <= id_priv_we;
         ex_satp_we <= id_satp_we;
+        
+        excpreq_out <= excp[1] & !excp[2];
     end
 end
 

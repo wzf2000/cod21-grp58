@@ -104,6 +104,12 @@
 
 `define FUNCT3_CSRRW 3'b001
 
+`define FUNCT3_CSRRCI 3'b111
+
+`define FUNCT3_CSRRSI 3'b110
+
+`define FUNCT3_CSRRWI 3'b101
+
 `define FUNCT3_EBREAK 3'b000
 
 

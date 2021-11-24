@@ -5,8 +5,12 @@
 module ppl_ex_mem(
     input wire clk,
     input wire rst,
-    input wire stall,
 
+    input wire stall,
+    output reg excpreq_out,
+    input wire[3:0] excp,
+
+    input wire[31:0] ex_pc,
     input wire[6:0] ex_alu_opcode,
     input wire[2:0] ex_alu_funct3,
     input wire ex_regd_en,
@@ -23,8 +27,9 @@ module ppl_ex_mem(
     input wire[31:0] mem_addr_retro,
     input wire tlb_valid_update,
     input wire [19:0] tlb_virtual_update,
-    input wire [19:0] tlb_physical_update,
+    input wire [31:0] tlb_physical_update,
 
+    output reg[31:0] mem_pc,
     output reg[6:0] mem_alu_opcode,
     output reg[2:0] mem_alu_funct3,
     output reg mem_regd_en,
@@ -40,7 +45,47 @@ module ppl_ex_mem(
     //TLB
     output reg tlb_valid,
     output reg [19:0] tlb_virtual,
-    output reg [19:0] tlb_physical
+    output reg [31:0] tlb_physical,
+
+    input wire ex_mtvec_we,
+    input wire ex_mscratch_we,
+    input wire ex_mepc_we,
+    input wire ex_mcause_we,
+    input wire ex_mstatus_we,
+    input wire ex_mie_we,
+    input wire ex_mip_we,
+    input wire ex_priv_we,
+    input wire ex_satp_we,
+
+    output reg mem_mtvec_we,
+    output reg mem_mscratch_we,
+    output reg mem_mepc_we,
+    output reg mem_mcause_we,
+    output reg mem_mstatus_we,
+    output reg mem_mie_we,
+    output reg mem_mip_we,
+    output reg mem_priv_we,
+    output reg mem_satp_we,
+
+    input wire[31:0] ex_mtvec_data,
+    input wire[31:0] ex_mscratch_data,
+    input wire[31:0] ex_mepc_data,
+    input wire[31:0] ex_mcause_data,
+    input wire[31:0] ex_mstatus_data,
+    input wire[31:0] ex_mie_data,
+    input wire[31:0] ex_mip_data,
+    input wire[31:0] ex_satp_data,
+    input wire[1:0] ex_priv_data,
+
+    output reg[31:0] mem_mtvec_data,
+    output reg[31:0] mem_mscratch_data,
+    output reg[31:0] mem_mepc_data,
+    output reg[31:0] mem_mcause_data,
+    output reg[31:0] mem_mstatus_data,
+    output reg[31:0] mem_mie_data,
+    output reg[31:0] mem_mip_data,
+    output reg[31:0] mem_satp_data,
+    output reg[1:0] mem_priv_data
 );
 
 always @(posedge clk or posedge rst) begin
@@ -59,23 +104,35 @@ always @(posedge clk or posedge rst) begin
         mem_phase <= 2'b0;
         tlb_valid <= 0;
         tlb_virtual <= 20'b0;
-        tlb_physical <= 20'b0;
+        tlb_physical <= 32'b0;
+
+        mem_mtvec_we <= 0;
+        mem_mscratch_we <= 0;
+        mem_mepc_we <= 0;
+        mem_mcause_we <= 0;
+        mem_mstatus_we <= 0;
+        mem_mie_we <= 0;
+        mem_mip_we <= 0;
+        mem_priv_we <= 0;
+        mem_satp_we <= 0;
+
+        mem_mtvec_data <= 32'b0;
+        mem_mscratch_data <= 32'b0;
+        mem_mepc_data <= 32'b0;
+        mem_mcause_data <= 32'b0;
+        mem_mstatus_data <= 32'b0;
+        mem_mie_data <= 32'b0;
+        mem_mip_data <= 32'b0;
+        mem_satp_data <= 32'b0;
+        mem_priv_data <= 2'b0;
+
+        excpreq_out <= 0;
     end
-    // else if (stall) begin
-    //     mem_alu_opcode <= mem_alu_opcode;
-    //     mem_alu_funct3 <= mem_alu_funct3;
-    //     mem_regd_en <= mem_regd_en;
-    //     mem_regd_addr <= mem_regd_addr;
-    //     mem_data <= mem_data;
-    //     mem_addr <= mem_addr;
-    //     mem_en <= mem_en;
-    //     mem_be_n <= mem_be_n;
-    // end
-    else begin
+    else if (excp[3]) begin
         tlb_valid <= tlb_valid_update;
         tlb_virtual <= tlb_virtual_update;
         tlb_physical <= tlb_physical_update;
-        if(ctrl) begin
+        if (ctrl) begin
             mem_alu_opcode <= mem_alu_opcode;
             mem_alu_funct3 <= mem_alu_funct3;
             mem_regd_en <= mem_regd_en;
@@ -88,6 +145,105 @@ always @(posedge clk or posedge rst) begin
             satp_rd <= satp_rd;
             priv_rd <= priv_rd;
             mem_phase <= mem_phase_retro;
+
+            mem_mtvec_we <= mem_mtvec_we;
+            mem_mscratch_we <= mem_mscratch_we;
+            mem_mepc_we <= mem_mepc_we;
+            mem_mcause_we <= mem_mcause_we;
+            mem_mstatus_we <= mem_mstatus_we;
+            mem_mie_we <= mem_mie_we;
+            mem_mip_we <= mem_mip_we;
+            mem_priv_we <= mem_priv_we;
+            mem_satp_we <= mem_satp_we;
+
+            mem_mtvec_data <= mem_mtvec_data;
+            mem_mscratch_data <= mem_mscratch_data;
+            mem_mepc_data <= mem_mepc_data;
+            mem_mcause_data <= mem_mcause_data;
+            mem_mstatus_data <= mem_mstatus_data;
+            mem_mie_data <= mem_mie_data;
+            mem_mip_data <= mem_mip_data;
+            mem_satp_data <= mem_satp_data;
+            mem_priv_data <= mem_priv_data;
+            excpreq_out <= 1;
+        end
+        else begin
+            mem_alu_opcode <= `OP_NOP;
+            mem_alu_funct3 <= `FUNCT3_NOP;
+            mem_regd_en <= 0;
+            mem_regd_addr <= 5'b0;
+            mem_data <= 32'b0;
+            mem_addr <= 32'b0;
+            virtual_addr <= 32'b0;
+            mem_en <= 0;
+            mem_be_n <= 4'b0;
+            satp_rd <= 32'b0;
+            priv_rd <= 2'b0;
+            mem_phase <= 2'b0;
+            tlb_valid <= 0;
+            tlb_virtual <= 20'b0;
+            tlb_physical <= 32'b0;
+
+            mem_mtvec_we <= 0;
+            mem_mscratch_we <= 0;
+            mem_mepc_we <= 0;
+            mem_mcause_we <= 0;
+            mem_mstatus_we <= 0;
+            mem_mie_we <= 0;
+            mem_mip_we <= 0;
+            mem_priv_we <= 0;
+            mem_satp_we <= 0;
+
+            mem_mtvec_data <= 32'b0;
+            mem_mscratch_data <= 32'b0;
+            mem_mepc_data <= 32'b0;
+            mem_mcause_data <= 32'b0;
+            mem_mstatus_data <= 32'b0;
+            mem_mie_data <= 32'b0;
+            mem_mip_data <= 32'b0;
+            mem_satp_data <= 32'b0;
+            mem_priv_data <= 2'b0;
+            excpreq_out <= 0;
+        end
+    end
+    else begin
+        tlb_valid <= tlb_valid_update;
+        tlb_virtual <= tlb_virtual_update;
+        tlb_physical <= tlb_physical_update;
+        if (ctrl) begin
+            mem_alu_opcode <= mem_alu_opcode;
+            mem_alu_funct3 <= mem_alu_funct3;
+            mem_regd_en <= mem_regd_en;
+            mem_regd_addr <= mem_regd_addr;
+            mem_data <= mem_data;
+            mem_addr <= mem_addr_retro;
+            virtual_addr <= virtual_addr;
+            mem_en <= mem_en;
+            mem_be_n <= mem_be_n;
+            satp_rd <= satp_rd;
+            priv_rd <= priv_rd;
+            mem_phase <= mem_phase_retro;
+
+            mem_mtvec_we <= mem_mtvec_we;
+            mem_mscratch_we <= mem_mscratch_we;
+            mem_mepc_we <= mem_mepc_we;
+            mem_mcause_we <= mem_mcause_we;
+            mem_mstatus_we <= mem_mstatus_we;
+            mem_mie_we <= mem_mie_we;
+            mem_mip_we <= mem_mip_we;
+            mem_priv_we <= mem_priv_we;
+            mem_satp_we <= mem_satp_we;
+
+            mem_mtvec_data <= mem_mtvec_data;
+            mem_mscratch_data <= mem_mscratch_data;
+            mem_mepc_data <= mem_mepc_data;
+            mem_mcause_data <= mem_mcause_data;
+            mem_mstatus_data <= mem_mstatus_data;
+            mem_mie_data <= mem_mie_data;
+            mem_mip_data <= mem_mip_data;
+            mem_satp_data <= mem_satp_data;
+            mem_priv_data <= mem_priv_data;
+            excpreq_out <= 0;
         end
         else begin
             mem_alu_opcode <= ex_alu_opcode;
@@ -102,6 +258,27 @@ always @(posedge clk or posedge rst) begin
             satp_rd <= ex_satp_rd;
             priv_rd <= ex_priv_rd;
             mem_phase <= 2'b00;
+            
+            mem_mtvec_we <= ex_mtvec_we;
+            mem_mscratch_we <= ex_mscratch_we;
+            mem_mepc_we <= ex_mepc_we;
+            mem_mcause_we <= ex_mcause_we;
+            mem_mstatus_we <= ex_mstatus_we;
+            mem_mie_we <= ex_mie_we;
+            mem_mip_we <= ex_mip_we;
+            mem_priv_we <= ex_priv_we;
+            mem_satp_we <= ex_satp_we;
+
+            mem_mtvec_data <= ex_mtvec_data;
+            mem_mscratch_data <= ex_mscratch_data;
+            mem_mepc_data <= ex_mepc_data;
+            mem_mcause_data <= ex_mcause_data;
+            mem_mstatus_data <= ex_mstatus_data;
+            mem_mie_data <= ex_mie_data;
+            mem_mip_data <= ex_mip_data;
+            mem_satp_data <= ex_satp_data;
+            mem_priv_data <= ex_priv_data;
+            excpreq_out <= excp[2] & !excp[3];
         end
     end
 end

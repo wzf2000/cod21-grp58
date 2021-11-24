@@ -19,6 +19,26 @@ module ppl_id(
     input wire[4:0] ex_regd_addr_in,
     input wire[31:0] ex_data_in,
 
+    input wire ex_mtvec_we,
+    input wire ex_mscratch_we,
+    input wire ex_mepc_we,
+    input wire ex_mcause_we,
+    input wire ex_mstatus_we,
+    input wire ex_mie_we,
+    input wire ex_mip_we,
+    input wire ex_satp_we,
+    input wire ex_privilege_we,
+
+    input wire [31:0] ex_mtvec_data_in,
+    input wire [31:0] ex_mscratch_data_in,
+    input wire [31:0] ex_mepc_data_in,
+    input wire [31:0] ex_mcause_data_in,
+    input wire [31:0] ex_mstatus_data_in,
+    input wire [31:0] ex_mie_data_in,
+    input wire [31:0] ex_mip_data_in,
+    input wire [31:0] ex_satp_data_in,
+    input wire [1:0] ex_privilege_data_in,
+
     // MEM stage
     input wire mem_regd_en_in,
     input wire[4:0] mem_regd_addr_in,
@@ -68,17 +88,19 @@ module ppl_id(
     output reg privilege_we,
 
     //pass on CSR value to next stage
-    output wire [31:0] mtvec_data_out,
-    output wire [31:0] mscratch_data_out,
-    output wire [31:0] mepc_data_out,
-    output wire [31:0] mcause_data_out,
-    output wire [31:0] mstatus_data_out,
-    output wire [31:0] mie_data_out,
-    output wire [31:0] mip_data_out,
-    output wire [31:0] satp_data_out,
-    output wire [1:0] privilege_data_out,
+    output reg [31:0] mtvec_data_out,
+    output reg [31:0] mscratch_data_out,
+    output reg [31:0] mepc_data_out,
+    output reg [31:0] mcause_data_out,
+    output reg [31:0] mstatus_data_out,
+    output reg [31:0] mie_data_out,
+    output reg [31:0] mip_data_out,
+    output reg [31:0] satp_data_out,
+    output reg [1:0] privilege_data_out,
 
-    output wire stallreq
+    output wire stallreq,
+    input wire excpreq_in,
+    output reg excpreq
 );
 
 reg regs1_en;
@@ -120,6 +142,7 @@ always @(*) begin
         imm = 32'b0;
         ret_addr = 32'b0;
         stall_req_LSBJ = 0;
+        excpreq = 0;
         mem_en = 0;
         mem_addr = 32'b0;
         branch_flag_out = 0;
@@ -140,6 +163,7 @@ always @(*) begin
         imm = 32'b0;
         ret_addr = 32'b0;
         stall_req_LSBJ = 0;
+        excpreq = excpreq_in;
         mem_en = 0;
         mem_addr = 32'b0;
         branch_flag_out = 0;
@@ -149,7 +173,7 @@ always @(*) begin
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
 
         //timer interrupt
-        if (mip_data_in[7] & mie_data_in[7] & (mstatus_data_in[3] | ~privilege_data_in[0])) //MTIP && MTIE && MIE
+        if (mip_data_out[7] & mie_data_out[7] & (mstatus_data_out[3] | ~privilege_data_out[0])) //MTIP && MTIE && MIE
         begin
             alu_opcode = `OP_CSR;
             alu_funct3 = `FUNCT3_EBREAK;  //similar to ebreak
@@ -160,7 +184,8 @@ always @(*) begin
             mcause_we = 1'b1;
             branch_flag_out = 1'b1;
             critical_flag_out = 1'b1;
-            branch_addr_out = mtvec_data_in;
+            branch_addr_out = mtvec_data_out;
+            excpreq = 1;
         end
         case (opcode)
             `OP_R: begin
@@ -348,7 +373,7 @@ always @(*) begin
                         reg_write = 1;
                         regs1_en = 1;
                         regs2_en = 0;
-                        case(instr[31:20])
+                        case (instr[31:20])
                             12'h305: mtvec_we = 1'b1;
                             12'h340: mscratch_we = 1'b1;
                             12'h341: mepc_we = 1'b1;
@@ -359,6 +384,25 @@ always @(*) begin
                             12'h180: satp_we = 1'b1;
                             default: mtvec_we = 1'b0;
                         endcase
+                        excpreq = 1;
+                    end
+                    `FUNCT3_CSRRCI, `FUNCT3_CSRRSI, `FUNCT3_CSRRWI: begin
+                        reg_write = 1;
+                        regs1_en = 0;
+                        regs2_en = 0;
+                        imm = {27'b0, regs1_addr};
+                        case (instr[31:20])
+                            12'h305: mtvec_we = 1'b1;
+                            12'h340: mscratch_we = 1'b1;
+                            12'h341: mepc_we = 1'b1;
+                            12'h342: mcause_we = 1'b1;
+                            12'h300: mstatus_we = 1'b1;
+                            12'h304: mie_we = 1'b1;
+                            12'h344: mip_we = 1'b1;
+                            12'h180: satp_we = 1'b1;
+                            default: mtvec_we = 1'b0;
+                        endcase
+                        excpreq = 1;
                     end
                     `FUNCT3_EBREAK: begin
                         reg_write = 0;
@@ -372,17 +416,19 @@ always @(*) begin
                                 mcause_we = 1'b1;
                                 branch_flag_out = 1'b1;
                                 critical_flag_out = 1'b1;
-                                branch_addr_out = mtvec_data_in;
+                                branch_addr_out = mtvec_data_out;
+                                excpreq = 1;
                             end
                             12'h302: begin //mret
                                 privilege_we = 1'b1;
                                 mstatus_we = 1'b1;
                                 branch_flag_out = 1'b1;
                                 critical_flag_out = 1'b1;
-                                branch_addr_out = mepc_data_in;
+                                branch_addr_out = mepc_data_out;
+                                excpreq = 1;
                             end
                             default: begin
-                                if(instr[31:25]==7'b0001001) begin
+                                if(instr[31:25]==7'b0001001) begin // sfence.vma
                                     //flush TLB
                                     tlb_flush = 1'b1;
                                     alu_opcode = `OP_NOP;
@@ -410,15 +456,35 @@ always @(*) begin
 end
 
 //Forwarding is done inside csr.v
-assign mtvec_data_out = mtvec_data_in;
-assign mscratch_data_out = mscratch_data_in;
-assign mepc_data_out = mepc_data_in;
-assign mcause_data_out = mcause_data_in;
-assign mstatus_data_out = mstatus_data_in;
-assign mie_data_out = mie_data_in;
-assign mip_data_out = mip_data_in;
-assign privilege_data_out = privilege_data_in;
-assign satp_data_out = satp_data_in;
+always @(*) begin
+    mtvec_data_out = mtvec_data_in;
+    mscratch_data_out = mscratch_data_in;
+    mepc_data_out = mepc_data_in;
+    mcause_data_out = mcause_data_in;
+    mstatus_data_out = mstatus_data_in;
+    mie_data_out = mie_data_in;
+    mip_data_out = mip_data_in;
+    privilege_data_out = privilege_data_in;
+    satp_data_out = satp_data_in;
+    if (ex_mtvec_we)
+        mtvec_data_out = ex_mtvec_data_in;
+    if (ex_mscratch_we)
+        mscratch_data_out = ex_mscratch_data_in;
+    if (ex_mepc_we)
+        mepc_data_out = ex_mepc_data_in;
+    if (ex_mcause_we)
+        mcause_data_out = ex_mcause_data_in;
+    if (ex_mstatus_we)
+        mstatus_data_out = ex_mstatus_data_in;
+    if (ex_mie_we)
+        mie_data_out = ex_mie_data_in;
+    if (ex_mip_we)
+        mip_data_out = ex_mip_data_in;
+    if (ex_privilege_we)
+        privilege_data_out = ex_privilege_data_in;
+    if (ex_satp_we)
+        satp_data_out = ex_satp_data_in;
+end
 
 always @(*) begin
     stall_req_regs1 = 0;

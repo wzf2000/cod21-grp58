@@ -221,12 +221,25 @@ wire stallreq_ex;
 wire stallreq_mem;
 wire stall;
 
+wire excpreq_if;
+wire excpreq_id;
+wire excpreq_ex;
+wire excpreq_mem;
+
+wire[3:0] excp;
+
 ppl_ctrl ctrl(
     .rst(reset_global),
     .stallreq_id(stallreq_id),
     .stallreq_ex(stallreq_ex),
     .stallreq_mem(stallreq_mem),
-    .stall(stall)
+    .stall(stall),
+
+    .excpreq_if(excpreq_if),
+    .excpreq_id(excpreq_id),
+    .excpreq_ex(excpreq_ex),
+    .excpreq_mem(excpreq_mem),
+    .excp(excp)
 );
 
 // IF stage output
@@ -241,6 +254,7 @@ wire[31:0] id_pc_in;
 wire[31:0] id_instr_in;
 wire[31:0] id_regs1_in;
 wire[31:0] id_regs2_in;
+wire id_excpreq_in;
 
 // ID stage output
 wire id_branch_flag_out;
@@ -316,8 +330,10 @@ wire ex_regd_en_in;
 wire[31:0] ex_ret_addr_in;
 wire ex_mem_en_in;
 wire[31:0] ex_mem_addr_in;
+wire ex_excpreq_in;
 
 // EXE stage output
+wire[31:0] ex_pc_out;
 wire[6:0] ex_alu_opcode_out;
 wire[2:0] ex_alu_funct3_out;
 wire[6:0] ex_alu_funct7_out;
@@ -332,7 +348,28 @@ wire[31:0] satp_rd;
 wire[1:0] priv_rd;
 wire[1:0] ex_mem_phase;
 
+wire[31:0] ex_mtvec_data_out;
+wire[31:0] ex_mscratch_data_out;
+wire[31:0] ex_mepc_data_out;
+wire[31:0] ex_mcause_data_out;
+wire[31:0] ex_mstatus_data_out;
+wire[31:0] ex_mie_data_out;
+wire[31:0] ex_mip_data_out;
+wire[31:0] ex_satp_data_out;
+wire[1:0] ex_priv_data_out;
+
+wire ex_mtvec_we_out;
+wire ex_mscratch_we_out;
+wire ex_mepc_we_out;
+wire ex_mcause_we_out;
+wire ex_mstatus_we_out;
+wire ex_mie_we_out;
+wire ex_mip_we_out;
+wire ex_satp_we_out;
+wire ex_priv_we_out;
+
 // MEM stage input
+wire[31:0] mem_pc_in;
 wire mem_en_in;
 wire[6:0] mem_alu_opcode_in;
 wire[2:0] mem_alu_funct3_in;
@@ -343,7 +380,28 @@ wire[31:0] mem_addr_in;
 wire[3:0] mem_be_n_in;
 wire tlb_valid_pass;
 wire[19:0] tlb_virtual_pass;
-wire[19:0] tlb_physical_pass;
+wire[31:0] tlb_physical_pass;
+wire mem_excpreq_in;
+
+wire[31:0] mem_mtvec_data;
+wire[31:0] mem_mscratch_data;
+wire[31:0] mem_mepc_data;
+wire[31:0] mem_mcause_data;
+wire[31:0] mem_mstatus_data;
+wire[31:0] mem_mie_data;
+wire[31:0] mem_mip_data;
+wire[31:0] mem_satp_data;
+wire[1:0] mem_priv_data;
+
+wire mem_mtvec_we;
+wire mem_mscratch_we;
+wire mem_mepc_we;
+wire mem_mcause_we;
+wire mem_mstatus_we;
+wire mem_mie_we;
+wire mem_mip_we;
+wire mem_satp_we;
+wire mem_priv_we;
 
 // SRAM controller
 wire[31:0] mem_read_data_in;
@@ -363,7 +421,10 @@ wire[1:0] mem_phase_back;
 wire[31:0] mem_addr_back;
 wire tlb_valid_update;
 wire[19:0] tlb_virtual_update;
-wire[19:0] tlb_physical_update;
+wire[31:0] tlb_physical_update;
+wire mem_branch_flag_out;
+wire mem_critical_flag_out;
+wire[31:0] mem_branch_addr_out;
 
 // WB stage input
 wire wb_regd_en_in;
@@ -373,7 +434,7 @@ wire[31:0] wb_data_in;
 assign leds[7:4] = {id_branch_flag_out, id_branch_addr_out[2:0]};
 
 // memory controller for base ram, ext ram and cpld uart
-SRAM sram(
+(* dont_touch = "TRUE" *) SRAM sram(
     .rst(reset_global),
 
     .mtime(mtime),
@@ -428,10 +489,15 @@ PC_reg pc_reg(
     .clk(clk_global),
     .rst(reset_global),
     .stall(stall),
+    .excp(excp),
+    .excpreq(excpreq_if),
 
-    .branch_flag(id_branch_flag_out),
-    .critical_flag(id_critical_flag_out),
-    .branch_addr(id_branch_addr_out),
+    .id_branch_flag(id_branch_flag_out),
+    .id_critical_flag(id_critical_flag_out),
+    .id_branch_addr(id_branch_addr_out),
+    .mem_branch_flag(mem_branch_flag_out),
+    .mem_critical_flag(mem_critical_flag_out),
+    .mem_branch_addr(mem_branch_addr_out),
     .mem_addr_retro(if_data_out),
 
     .satp(satp_o),
@@ -454,6 +520,8 @@ ppl_if_id if_id(
     .if_pc(if_pc_out),
 
     .stall(stall),
+    .excpreq_out(id_excpreq_in),
+    .excp(excp),
 
     .ram_data(if_data_out),
 
@@ -495,6 +563,26 @@ ppl_id id(
     .ex_regd_en_in(ex_regd_en_out),
     .ex_regd_addr_in(ex_regd_addr_out),
     .ex_data_in(ex_data_out),
+
+    .ex_mtvec_we(ex_mtvec_we_out),
+    .ex_mscratch_we(ex_mscratch_we_out),
+    .ex_mepc_we(ex_mepc_we_out),
+    .ex_mcause_we(ex_mcause_we_out),
+    .ex_mstatus_we(ex_mstatus_we_out),
+    .ex_mie_we(ex_mie_we_out),
+    .ex_mip_we(ex_mip_we_out),
+    .ex_satp_we(ex_satp_we_out),
+    .ex_privilege_we(ex_priv_we_out),
+
+    .ex_mtvec_data_in(ex_mtvec_data_out),
+    .ex_mscratch_data_in(ex_mscratch_data_out),
+    .ex_mepc_data_in(ex_mepc_data_out),
+    .ex_mcause_data_in(ex_mcause_data_out),
+    .ex_mstatus_data_in(ex_mstatus_data_out),
+    .ex_mie_data_in(ex_mie_data_out),
+    .ex_mip_data_in(ex_mip_data_out),
+    .ex_satp_data_in(ex_satp_data_out),
+    .ex_privilege_data_in(ex_priv_data_out),
 
     // MEM stage
     .mem_regd_en_in(mem_regd_en_out),
@@ -552,7 +640,9 @@ ppl_id id(
     .satp_data_out(id_satp_data),
     .privilege_data_out(id_priv_data),
 
-    .stallreq(stallreq_id)
+    .stallreq(stallreq_id),
+    .excpreq_in(id_excpreq_in),
+    .excpreq(excpreq_id)
 );
 
 // ID/EXE stage
@@ -561,6 +651,8 @@ ppl_id_ex id_ex(
     .rst(reset_global),
 
     .stall(stall),
+    .excpreq_out(ex_excpreq_in),
+    .excp(excp),
 
     .id_pc(id_pc_out),
     .id_alu_opcode(id_alu_opcode_out),
@@ -646,6 +738,8 @@ ppl_ex ex(
     .mem_en_in(ex_mem_en_in),
     .mem_addr_in(ex_mem_addr_in),
     .ret_addr_in(ex_ret_addr_in),
+
+    .pc_out(ex_pc_out),
     
     .mtvec_in(ex_mtvec_data),
     .mscratch_in(ex_mscratch_data),
@@ -657,15 +751,15 @@ ppl_ex ex(
     .satp_in(ex_satp_data),
     .priv_in(ex_priv_data),
 
-    .mtvec_out(mtvec_wdata),
-    .mscratch_out(mscratch_wdata),
-    .mepc_out(mepc_wdata),
-    .mcause_out(mcause_wdata),
-    .mstatus_out(mstatus_wdata),
-    .mie_out(mie_wdata),
-    .mip_out(mip_wdata),
-    .satp_out(satp_wdata),
-    .priv_out(privilege_wdata),
+    .mtvec_out(ex_mtvec_data_out),
+    .mscratch_out(ex_mscratch_data_out),
+    .mepc_out(ex_mepc_data_out),
+    .mcause_out(ex_mcause_data_out),
+    .mstatus_out(ex_mstatus_data_out),
+    .mie_out(ex_mie_data_out),
+    .mip_out(ex_mip_data_out),
+    .satp_out(ex_satp_data_out),
+    .priv_out(ex_priv_data_out),
 
     .mtvec_we_in(ex_mtvec_we),
     .mscratch_we_in(ex_mscratch_we),
@@ -677,15 +771,15 @@ ppl_ex ex(
     .satp_we_in(ex_satp_we),
     .priv_we_in(ex_priv_we),
 
-    .mtvec_we_out(mtvec_we),
-    .mscratch_we_out(mscratch_we),
-    .mepc_we_out(mepc_we),
-    .mcause_we_out(mcause_we),
-    .mstatus_we_out(mstatus_we),
-    .mie_we_out(mie_we),
-    .mip_we_out(mip_we),
-    .satp_we_out(satp_we),
-    .priv_we_out(privilege_we),
+    .mtvec_we_out(ex_mtvec_we_out),
+    .mscratch_we_out(ex_mscratch_we_out),
+    .mepc_we_out(ex_mepc_we_out),
+    .mcause_we_out(ex_mcause_we_out),
+    .mstatus_we_out(ex_mstatus_we_out),
+    .mie_we_out(ex_mie_we_out),
+    .mip_we_out(ex_mip_we_out),
+    .satp_we_out(ex_satp_we_out),
+    .priv_we_out(ex_priv_we_out),
 
     .alu_opcode_out(ex_alu_opcode_out),
     .alu_funct3_out(ex_alu_funct3_out),
@@ -696,15 +790,21 @@ ppl_ex ex(
     .mem_be_n_out(ex_mem_be_n_out),
 
     .data_out(ex_data_out),
-    .stall_req(stallreq_ex)
+    .stall_req(stallreq_ex),
+    .excpreq_in(ex_excpreq_in),
+    .excpreq(excpreq_ex)
 );
 
 // EXE/MEM stage
 ppl_ex_mem ex_mem(
     .clk(clk_global),
     .rst(reset_global),
-    .stall(stall),
 
+    .stall(stall),
+    .excpreq_out(mem_excpreq_in),
+    .excp(excp),
+
+    .ex_pc(ex_pc_out),
     .ex_alu_opcode(ex_alu_opcode_out),
     .ex_alu_funct3(ex_alu_funct3_out),
     .ex_regd_en(ex_regd_en_out),
@@ -713,14 +813,55 @@ ppl_ex_mem ex_mem(
     .ex_mem_addr(ex_mem_addr_out),
     .ex_mem_en(ex_mem_en_out),
     .ex_mem_be_n(ex_mem_be_n_out),
-    .ex_satp_rd(satp_wdata), //instr that change them have no L/S -> no address translation anyway
-    .ex_priv_rd(privilege_wdata),
+    .ex_satp_rd(ex_satp_we_out), //instr that change them have no L/S -> no address translation anyway
+    .ex_priv_rd(ex_priv_we_out),
     .ctrl(ctrl_back),
     .mem_phase_retro(mem_phase_back),
     .mem_addr_retro(mem_addr_back),
     .tlb_valid_update(tlb_valid_update),
     .tlb_virtual_update(tlb_virtual_update),
     .tlb_physical_update(tlb_physical_update),
+
+    .ex_mtvec_we(ex_mtvec_we_out),
+    .ex_mscratch_we(ex_mscratch_we_out),
+    .ex_mepc_we(ex_mepc_we_out),
+    .ex_mcause_we(ex_mcause_we_out),
+    .ex_mstatus_we(ex_mstatus_we_out),
+    .ex_mie_we(ex_mie_we_out),
+    .ex_mip_we(ex_mip_we_out),
+    .ex_priv_we(ex_priv_we_out),
+    .ex_satp_we(ex_satp_we_out),
+
+    .mem_pc(mem_pc_in),
+    .mem_mtvec_we(mem_mtvec_we),
+    .mem_mscratch_we(mem_mscratch_we),
+    .mem_mepc_we(mem_mepc_we),
+    .mem_mcause_we(mem_mcause_we),
+    .mem_mstatus_we(mem_mstatus_we),
+    .mem_mie_we(mem_mie_we),
+    .mem_mip_we(mem_mip_we),
+    .mem_priv_we(mem_priv_we),
+    .mem_satp_we(mem_satp_we),
+
+    .ex_mtvec_data(ex_mtvec_data_out),
+    .ex_mscratch_data(ex_mscratch_data_out),
+    .ex_mepc_data(ex_mepc_data_out),
+    .ex_mcause_data(ex_mcause_data_out),
+    .ex_mstatus_data(ex_mstatus_data_out),
+    .ex_mie_data(ex_mie_data_out),
+    .ex_mip_data(ex_mip_data_out),
+    .ex_satp_data(ex_satp_data_out),
+    .ex_priv_data(ex_priv_data_out),
+
+    .mem_mtvec_data(mem_mtvec_data),
+    .mem_mscratch_data(mem_mscratch_data),
+    .mem_mepc_data(mem_mepc_data),
+    .mem_mcause_data(mem_mcause_data),
+    .mem_mstatus_data(mem_mstatus_data),
+    .mem_mie_data(mem_mie_data),
+    .mem_mip_data(mem_mip_data),
+    .mem_satp_data(mem_satp_data),
+    .mem_priv_data(mem_priv_data),
 
     .mem_alu_opcode(mem_alu_opcode_in),
     .mem_alu_funct3(mem_alu_funct3_in),
@@ -741,9 +882,10 @@ ppl_ex_mem ex_mem(
 );
 
 // MEM stage
-ppl_mem mem(
+(* dont_touch = "TRUE" *) ppl_mem mem(
     .rst(reset_global),
 
+    .pc_in(mem_pc_in),
     .alu_opcode_in(mem_alu_opcode_in),
     .alu_funct3_in(mem_alu_funct3_in),
 
@@ -770,6 +912,46 @@ ppl_mem mem(
 
     .write_data(mem_write_data_out),
     .read_data(mem_read_data_in),
+    
+    .mtvec_in(mem_mtvec_data),
+    .mscratch_in(mem_mscratch_data),
+    .mepc_in(mem_mepc_data),
+    .mcause_in(mem_mcause_data),
+    .mstatus_in(mem_mstatus_data),
+    .mie_in(mem_mie_data),
+    .mip_in(mem_mip_data),
+    .satp_in(mem_satp_data),
+    .priv_in(mem_priv_data),
+
+    .mtvec_out(mtvec_wdata),
+    .mscratch_out(mscratch_wdata),
+    .mepc_out(mepc_wdata),
+    .mcause_out(mcause_wdata),
+    .mstatus_out(mstatus_wdata),
+    .mie_out(mie_wdata),
+    .mip_out(mip_wdata),
+    .satp_out(satp_wdata),
+    .priv_out(privilege_wdata),
+
+    .mtvec_we_in(mem_mtvec_we),
+    .mscratch_we_in(mem_mscratch_we),
+    .mepc_we_in(mem_mepc_we),
+    .mcause_we_in(mem_mcause_we),
+    .mstatus_we_in(mem_mstatus_we),
+    .mie_we_in(mem_mie_we),
+    .mip_we_in(mem_mip_we),
+    .satp_we_in(mem_satp_we),
+    .priv_we_in(mem_priv_we),
+
+    .mtvec_we_out(mtvec_we),
+    .mscratch_we_out(mscratch_we),
+    .mepc_we_out(mepc_we),
+    .mcause_we_out(mcause_we),
+    .mstatus_we_out(mstatus_we),
+    .mie_we_out(mie_we),
+    .mip_we_out(mip_we),
+    .satp_we_out(satp_we),
+    .priv_we_out(privilege_we),
 
     .ram_addr(mem_addr_out),
     .ram_be_n(mem_be_n_out),
@@ -781,7 +963,13 @@ ppl_mem mem(
     .regd_en_out(mem_regd_en_out),
     .data_out(mem_data_out),
 
+    .branch_flag_out(mem_branch_flag_out),
+    .critical_flag_out(mem_critical_flag_out),
+    .branch_addr_out(mem_branch_addr_out),
+
     .stallreq(stallreq_mem),
+    .excpreq_in(mem_excpreq_in),
+    .excpreq(excpreq_mem),
     .tlb_valid_update(tlb_valid_update),
     .tlb_virtual_update(tlb_virtual_update),
     .tlb_physical_update(tlb_physical_update)
