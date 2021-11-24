@@ -152,212 +152,214 @@ always @(*) begin
             branch_flag_out = 1'b1;
             branch_addr_out = mtvec_data_in;
         end
-        case (opcode)
-            `OP_R: begin
-                regs1_en = 1;
-                regs2_en = 1;
-                case (funct3)
-                    `FUNCT3_ADD, `FUNCT3_AND: begin
-                        alu_opcode = opcode;
-                        alu_funct3 = funct3;
-                        alu_funct7 = funct7;
-                        reg_write = 1;
-                    end
-                    `FUNCT3_SLTU: begin
-                        alu_opcode = opcode;
-                        alu_funct3 = funct3;
-                        alu_funct7 = funct7;
-                        reg_write = 1;
-                    end
-                    `FUNCT3_XOR: begin
-                        case (funct7)
-                            `FUNCT7_XOR, `FUNCT7_PACK, `FUNCT7_XNOR: begin
-                                alu_opcode = opcode;
-                                alu_funct3 = funct3;
-                                alu_funct7 = funct7;
-                                reg_write = 1;
-                            end
-                            default: begin
-                                regs1_en = 0;
-                                regs2_en = 0;
-                            end
-                        endcase
-                    end
-                    `FUNCT3_OR: begin
-                        case (funct7)
-                            `FUNCT7_OR, `FUNCT7_MINU: begin
-                                alu_opcode = opcode;
-                                alu_funct3 = funct3;
-                                alu_funct7 = funct7;
-                                reg_write = 1;
-                            end
-                            default: begin
-                                regs1_en = 0;
-                                regs2_en = 0;
-                            end
-                        endcase
-                    end
-                    default: begin
-                        regs1_en = 0;
-                        regs2_en = 0;
-                    end
-                endcase
-            end
-            `OP_I: begin
-                regs1_en = 1;
-                case (funct3)
-                    `FUNCT3_ADDI, `FUNCT3_ANDI, `FUNCT3_ORI: begin
-                        alu_opcode = opcode;
-                        alu_funct3 = funct3;
-                        alu_funct7 = funct7;
-                        reg_write = 1;
-                        imm = {{20{instr[31]}}, instr[31:20]};
-                    end
-                    `FUNCT3_SLLI, `FUNCT3_SRLI: begin
-                        alu_opcode = opcode;
-                        alu_funct3 = funct3;
-                        alu_funct7 = funct7;
-                        reg_write = 1;
-                        imm = {27'b0, instr[24:20]};
-                    end
-                    default: begin
-                        regs1_en = 0;
-                    end
-                endcase
-            end
-            `OP_S: begin
-                alu_opcode = opcode;
-                alu_funct3 = funct3;
-                regs1_en = 1;
-                regs2_en = 1;
-                imm = {{20{instr[31]}}, instr[31:25], instr[11:7]};
-                mem_en = 1;
-                mem_addr = {{20{instr[31]}}, instr[31:25], instr[11:7]};
-            end
-            `OP_L: begin
-                alu_opcode = opcode;
-                alu_funct3 = funct3;
-                reg_write = 1;
-                regs1_en = 1;
-                imm = {{20{instr[31]}}, instr[31:20]};
-                mem_en = 1;
-                mem_addr = {{20{instr[31]}}, instr[31:20]};
-            end
-            `OP_B: begin
-                alu_opcode = opcode;
-                alu_funct3 = funct3;
-                regs1_en = 1;
-                regs2_en = 1;
-                imm = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
-                case (funct3)
-                    `FUNCT3_BEQ, `FUNCT3_BNE: begin
-                        if (ex_alu_opcode_in == `OP_S || ex_alu_opcode_in == `OP_L) begin
-                            stall_req_LSBJ = 1;
+        else begin
+            case (opcode)
+                `OP_R: begin
+                    regs1_en = 1;
+                    regs2_en = 1;
+                    case (funct3)
+                        `FUNCT3_ADD, `FUNCT3_AND: begin
+                            alu_opcode = opcode;
+                            alu_funct3 = funct3;
+                            alu_funct7 = funct7;
+                            reg_write = 1;
                         end
-                        else if (funct3 == `FUNCT3_BEQ && regs1_out == regs2_out
-                              || funct3 == `FUNCT3_BNE && regs1_out != regs2_out) begin
-                            branch_flag_out = 1;
-                            branch_addr_out = pc_in + {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
+                        `FUNCT3_SLTU: begin
+                            alu_opcode = opcode;
+                            alu_funct3 = funct3;
+                            alu_funct7 = funct7;
+                            reg_write = 1;
                         end
-                    end
-                endcase
-            end
-            `OP_AUIPC: begin
-                alu_opcode = opcode;
-                reg_write = 1;
-                imm = pc_in + {instr[31:12], 12'b0};
-            end
-            `OP_LUI: begin
-                alu_opcode = opcode;
-                reg_write = 1;
-                imm = {instr[31:12], 12'b0};
-            end
-            `OP_JAL: begin
-                if (ex_alu_opcode_in == `OP_S || ex_alu_opcode_in == `OP_L) begin
-                    stall_req_LSBJ = 1;
+                        `FUNCT3_XOR: begin
+                            case (funct7)
+                                `FUNCT7_XOR, `FUNCT7_PACK, `FUNCT7_XNOR: begin
+                                    alu_opcode = opcode;
+                                    alu_funct3 = funct3;
+                                    alu_funct7 = funct7;
+                                    reg_write = 1;
+                                end
+                                default: begin
+                                    regs1_en = 0;
+                                    regs2_en = 0;
+                                end
+                            endcase
+                        end
+                        `FUNCT3_OR: begin
+                            case (funct7)
+                                `FUNCT7_OR, `FUNCT7_MINU: begin
+                                    alu_opcode = opcode;
+                                    alu_funct3 = funct3;
+                                    alu_funct7 = funct7;
+                                    reg_write = 1;
+                                end
+                                default: begin
+                                    regs1_en = 0;
+                                    regs2_en = 0;
+                                end
+                            endcase
+                        end
+                        default: begin
+                            regs1_en = 0;
+                            regs2_en = 0;
+                        end
+                    endcase
                 end
-                else begin
+                `OP_I: begin
+                    regs1_en = 1;
+                    case (funct3)
+                        `FUNCT3_ADDI, `FUNCT3_ANDI, `FUNCT3_ORI: begin
+                            alu_opcode = opcode;
+                            alu_funct3 = funct3;
+                            alu_funct7 = funct7;
+                            reg_write = 1;
+                            imm = {{20{instr[31]}}, instr[31:20]};
+                        end
+                        `FUNCT3_SLLI, `FUNCT3_SRLI: begin
+                            alu_opcode = opcode;
+                            alu_funct3 = funct3;
+                            alu_funct7 = funct7;
+                            reg_write = 1;
+                            imm = {27'b0, instr[24:20]};
+                        end
+                        default: begin
+                            regs1_en = 0;
+                        end
+                    endcase
+                end
+                `OP_S: begin
                     alu_opcode = opcode;
-                    reg_write = 1;
-                    regs1_en = 0;
-                    regs2_en = 0;
-                    imm = offset;
-                    ret_addr = pc_in + 4;
-                    branch_flag_out = 1;
-                    branch_addr_out = (pc_in + (offset << 1));
+                    alu_funct3 = funct3;
+                    regs1_en = 1;
+                    regs2_en = 1;
+                    imm = {{20{instr[31]}}, instr[31:25], instr[11:7]};
+                    mem_en = 1;
+                    mem_addr = {{20{instr[31]}}, instr[31:25], instr[11:7]};
                 end
-            end
-            `OP_JALR: begin
-                if (ex_alu_opcode_in == `OP_S || ex_alu_opcode_in == `OP_L) begin
-                    stall_req_LSBJ = 1;
-                end
-                else begin
+                `OP_L: begin
                     alu_opcode = opcode;
+                    alu_funct3 = funct3;
                     reg_write = 1;
                     regs1_en = 1;
-                    regs2_en = 0;
                     imm = {{20{instr[31]}}, instr[31:20]};
-                    ret_addr = pc_in + 4;
-                    branch_flag_out = 1;
-                    branch_addr_out = (regs1_out + {{19{instr[31]}}, instr[31:20], 1'b0}) & (~32'h00000001);
+                    mem_en = 1;
+                    mem_addr = {{20{instr[31]}}, instr[31:20]};
                 end
-            end
-            `OP_CSR: begin
-                // todo: CSR instruction
-                alu_opcode = opcode;
-                alu_funct3 = funct3;
-                alu_funct_csr = instr[31:20];
-                case (funct3)
-                    `FUNCT3_CSRRC, `FUNCT3_CSRRS, `FUNCT3_CSRRW: begin
+                `OP_B: begin
+                    alu_opcode = opcode;
+                    alu_funct3 = funct3;
+                    regs1_en = 1;
+                    regs2_en = 1;
+                    imm = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
+                    case (funct3)
+                        `FUNCT3_BEQ, `FUNCT3_BNE: begin
+                            if (ex_alu_opcode_in == `OP_S || ex_alu_opcode_in == `OP_L) begin
+                                stall_req_LSBJ = 1;
+                            end
+                            else if (funct3 == `FUNCT3_BEQ && regs1_out == regs2_out
+                                || funct3 == `FUNCT3_BNE && regs1_out != regs2_out) begin
+                                branch_flag_out = 1;
+                                branch_addr_out = pc_in + {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
+                            end
+                        end
+                    endcase
+                end
+                `OP_AUIPC: begin
+                    alu_opcode = opcode;
+                    reg_write = 1;
+                    imm = pc_in + {instr[31:12], 12'b0};
+                end
+                `OP_LUI: begin
+                    alu_opcode = opcode;
+                    reg_write = 1;
+                    imm = {instr[31:12], 12'b0};
+                end
+                `OP_JAL: begin
+                    if (ex_alu_opcode_in == `OP_S || ex_alu_opcode_in == `OP_L) begin
+                        stall_req_LSBJ = 1;
+                    end
+                    else begin
+                        alu_opcode = opcode;
+                        reg_write = 1;
+                        regs1_en = 0;
+                        regs2_en = 0;
+                        imm = offset;
+                        ret_addr = pc_in + 4;
+                        branch_flag_out = 1;
+                        branch_addr_out = (pc_in + (offset << 1));
+                    end
+                end
+                `OP_JALR: begin
+                    if (ex_alu_opcode_in == `OP_S || ex_alu_opcode_in == `OP_L) begin
+                        stall_req_LSBJ = 1;
+                    end
+                    else begin
+                        alu_opcode = opcode;
                         reg_write = 1;
                         regs1_en = 1;
                         regs2_en = 0;
-                        case(instr[31:20])
-                            12'h305: mtvec_we = 1'b1;
-                            12'h340: mscratch_we = 1'b1;
-                            12'h341: mepc_we = 1'b1;
-                            12'h342: mcause_we = 1'b1;
-                            12'h300: mstatus_we = 1'b1;
-                            12'h304: mie_we = 1'b1;
-                            12'h344: mip_we = 1'b1;
-                            default: mtvec_we = 1'b0;
-                        endcase
+                        imm = {{20{instr[31]}}, instr[31:20]};
+                        ret_addr = pc_in + 4;
+                        branch_flag_out = 1;
+                        branch_addr_out = (regs1_out + {{19{instr[31]}}, instr[31:20], 1'b0}) & (~32'h00000001);
                     end
-                    `FUNCT3_EBREAK: begin
-                        reg_write = 0;
-                        regs1_en = 0;
-                        regs2_en = 0;
-                        case(instr[31:20])
-                            12'h000, 12'h001: begin //ecall, ebreak
-                                privilege_we = 1'b1;
-                                mstatus_we = 1'b1;
-                                mepc_we = 1'b1;
-                                mcause_we = 1'b1;
-                                branch_flag_out = 1'b1;
-                                branch_addr_out = mtvec_data_in;
-                            end
-                            12'h302: begin //mret
-                                privilege_we = 1'b1;
-                                mstatus_we = 1'b1;
-                                branch_flag_out = 1'b1;
-                                branch_addr_out = mepc_data_in;
-                            end
-                            default: begin
-                                
-                            end
-                        endcase
-                    end
-                    default: begin
-                        reg_write = 0;
-                        regs1_en = 0;
-                        regs2_en = 0;
-                    end
-                endcase
-            end
-            default: begin
-                // unknown instruction type, do nothing
-            end
-        endcase
+                end
+                `OP_CSR: begin
+                    // todo: CSR instruction
+                    alu_opcode = opcode;
+                    alu_funct3 = funct3;
+                    alu_funct_csr = instr[31:20];
+                    case (funct3)
+                        `FUNCT3_CSRRC, `FUNCT3_CSRRS, `FUNCT3_CSRRW: begin
+                            reg_write = 1;
+                            regs1_en = 1;
+                            regs2_en = 0;
+                            case(instr[31:20])
+                                12'h305: mtvec_we = 1'b1;
+                                12'h340: mscratch_we = 1'b1;
+                                12'h341: mepc_we = 1'b1;
+                                12'h342: mcause_we = 1'b1;
+                                12'h300: mstatus_we = 1'b1;
+                                12'h304: mie_we = 1'b1;
+                                12'h344: mip_we = 1'b1;
+                                default: mtvec_we = 1'b0;
+                            endcase
+                        end
+                        `FUNCT3_EBREAK: begin
+                            reg_write = 0;
+                            regs1_en = 0;
+                            regs2_en = 0;
+                            case(instr[31:20])
+                                12'h000, 12'h001: begin //ecall, ebreak
+                                    privilege_we = 1'b1;
+                                    mstatus_we = 1'b1;
+                                    mepc_we = 1'b1;
+                                    mcause_we = 1'b1;
+                                    branch_flag_out = 1'b1;
+                                    branch_addr_out = mtvec_data_in;
+                                end
+                                12'h302: begin //mret
+                                    privilege_we = 1'b1;
+                                    mstatus_we = 1'b1;
+                                    branch_flag_out = 1'b1;
+                                    branch_addr_out = mepc_data_in;
+                                end
+                                default: begin
+                                    
+                                end
+                            endcase
+                        end
+                        default: begin
+                            reg_write = 0;
+                            regs1_en = 0;
+                            regs2_en = 0;
+                        end
+                    endcase
+                end
+                default: begin
+                    // unknown instruction type, do nothing
+                end
+            endcase
+        end
     end
 end
 
