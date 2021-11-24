@@ -813,8 +813,8 @@ ppl_ex_mem ex_mem(
     .ex_mem_addr(ex_mem_addr_out),
     .ex_mem_en(ex_mem_en_out),
     .ex_mem_be_n(ex_mem_be_n_out),
-    .ex_satp_rd(ex_satp_we_out), //instr that change them have no L/S -> no address translation anyway
-    .ex_priv_rd(ex_priv_we_out),
+    .ex_satp_rd(ex_satp_data_out), //instr that change them have no L/S -> no address translation anyway
+    .ex_priv_rd(ex_priv_data_out),
     .ctrl(ctrl_back),
     .mem_phase_retro(mem_phase_back),
     .mem_addr_retro(mem_addr_back),

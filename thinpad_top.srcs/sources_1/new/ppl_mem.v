@@ -99,7 +99,7 @@ wire rw = (alu_opcode_in == `OP_S)||(alu_opcode_in == `OP_L);
 wire translation = rw & (~priv[0]) & satp[31];
 wire tlb_hit = tlb_valid_in && (tlb_virtual_in == virtual_addr[31:12]);
 assign stallreq = translation & (~mem_phase[1]) & (~tlb_hit); //00:level 1 table, 01:level 2 table, 10: physical addr
-assign ctrl_back = translation & (~mem_phase[1]) & (~tlb_hit);
+assign ctrl_back = translation & (~mem_phase[1]) & (~tlb_hit) & (~excpreq);
 
 always @(*) begin
     if (rst) begin
@@ -138,6 +138,9 @@ always @(*) begin
         mip_out = 0;
         satp_out = 0;
         priv_out = 0;
+        branch_flag_out = 0;
+        critical_flag_out = 0;
+        branch_addr_out = 32'b0;
     end
     else begin
         regd_addr_out = regd_addr_in;
@@ -175,6 +178,9 @@ always @(*) begin
         mip_out = mip_in;
         satp_out = satp_in;
         priv_out = priv_in;
+        branch_flag_out = 0;
+        critical_flag_out = 0;
+        branch_addr_out = 32'b0;
         if (mem_en_in) begin
             if (translation & (~mem_phase[1]) & (~mem_phase[0]) & (~tlb_hit)) begin // 00: level 1 table
                 regd_en_out = 0;
@@ -184,7 +190,7 @@ always @(*) begin
                 ram_we_n = 1'b1;
                 ram_oe_n = 1'b0;
                 // 7: D, 6: A, 4: U, 3: X, 2: W, 1: R, 0: V
-                if (((~read_data[0]) | (read_data[1] & (~read_data[2]))) && (alu_opcode_in == `OP_S || alu_opcode_in == `OP_L)) begin
+                if (((~read_data[0]) | (read_data[2] & (~read_data[1]))) && (alu_opcode_in == `OP_S || alu_opcode_in == `OP_L)) begin
                     priv_we_out = 1;
                     mstatus_we_out = 1;
                     mepc_we_out = 1;
@@ -202,9 +208,6 @@ always @(*) begin
                         mcause_out = {1'b0, 27'b0, 4'b1111};
                     else
                         mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                    ram_ce_n = 1;
-                    ram_we_n = 1;
                 end
                 // mstatus[19] = MXR, mstatus[18] = SUM
                 else if (read_data[3] | read_data[2] | read_data[1]) begin //r w x is not all zero, PTE is leaf
@@ -229,9 +232,6 @@ always @(*) begin
                             mcause_out = {1'b0, 27'b0, 4'b1111};
                         else
                             mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                        ram_ce_n = 1;
-                        ram_we_n = 1;
                     end
                     else if (read_data[10] != 0) begin
                         priv_we_out = 1;
@@ -251,31 +251,6 @@ always @(*) begin
                             mcause_out = {1'b0, 27'b0, 4'b1111};
                         else
                             mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                        ram_ce_n = 1;
-                        ram_we_n = 1;
-                    end
-                    else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
-                        priv_we_out = 1;
-                        mstatus_we_out = 1;
-                        mepc_we_out = 1;
-                        mcause_we_out = 1;
-
-                        branch_flag_out = 1'b1;
-                        critical_flag_out = 1'b1;
-                        branch_addr_out = mtvec_in;
-                        excpreq = 1;
-
-                        priv_out = 2'b11;
-                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out = pc_in;
-                        if (alu_opcode_in == `OP_S)
-                            mcause_out = {1'b0, 27'b0, 4'b1111};
-                        else
-                            mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                        ram_ce_n = 1;
-                        ram_we_n = 1;
                     end
                     else begin
                         mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
@@ -295,7 +270,7 @@ always @(*) begin
                 ram_we_n = 1'b1;
                 ram_oe_n = 1'b0;
 
-                if (((~read_data[0]) | (read_data[1] & (~read_data[2]))) && (alu_opcode_in == `OP_S || alu_opcode_in == `OP_L)) begin
+                if (((~read_data[0]) | (read_data[2] & (~read_data[1]))) && (alu_opcode_in == `OP_S || alu_opcode_in == `OP_L)) begin
                     priv_we_out = 1;
                     mstatus_we_out = 1;
                     mepc_we_out = 1;
@@ -313,9 +288,6 @@ always @(*) begin
                         mcause_out = {1'b0, 27'b0, 4'b1111};
                     else
                         mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                    ram_ce_n = 1;
-                    ram_we_n = 1;
                 end
                 else if (read_data[3] | read_data[2] | read_data[1]) begin //r w x is not all zero, PTE is leaf
                     tlb_virtual_update = virtual_addr[31:12];
@@ -340,31 +312,6 @@ always @(*) begin
                             mcause_out = {1'b0, 27'b0, 4'b1111};
                         else
                             mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                        ram_ce_n = 1;
-                        ram_we_n = 1;
-                    end
-                    else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
-                        priv_we_out = 1;
-                        mstatus_we_out = 1;
-                        mepc_we_out = 1;
-                        mcause_we_out = 1;
-
-                        branch_flag_out = 1'b1;
-                        critical_flag_out = 1'b1;
-                        branch_addr_out = mtvec_in;
-                        excpreq = 1;
-
-                        priv_out = 2'b11;
-                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out = pc_in;
-                        if (alu_opcode_in == `OP_S)
-                            mcause_out = {1'b0, 27'b0, 4'b1111};
-                        else
-                            mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                        ram_ce_n = 1;
-                        ram_we_n = 1;
                     end
                     else begin
                         mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
@@ -389,14 +336,10 @@ always @(*) begin
                         mcause_out = {1'b0, 27'b0, 4'b1111};
                     else
                         mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                    ram_ce_n = 1;
-                    ram_we_n = 1;
                 end
             end
             else begin // doesn't need translation or translation done (phase=10)
-                regd_en_out = regd_en_in;
-                if ((alu_opcode_in == `OP_S && (!tlb_physical_in[2])) || (alu_opcode_in == `OP_L && (!tlb_physical_in[1]) && (!mstatus_in[19])) || (priv_in == 2'b00 && (!tlb_physical_in[4])) || (priv_in == 2'b01 && tlb_physical_in[4] && (!mstatus_in[18]))) begin
+                if (translation && ((alu_opcode_in == `OP_S && (!tlb_physical_in[2])) || (alu_opcode_in == `OP_L && (!tlb_physical_in[1]) && (!mstatus_in[19])) || (priv_in == 2'b00 && (!tlb_physical_in[4])) || (priv_in == 2'b01 && tlb_physical_in[4] && (!mstatus_in[18])))) begin
                     priv_we_out = 1;
                     mstatus_we_out = 1;
                     mepc_we_out = 1;
@@ -414,11 +357,9 @@ always @(*) begin
                         mcause_out = {1'b0, 27'b0, 4'b1111};
                     else
                         mcause_out = {1'b0, 27'b0, 4'b1101};
-
-                    ram_ce_n = 1;
-                    ram_we_n = 1;
                 end
                 else begin
+                    regd_en_out = regd_en_in;
                     case (alu_opcode_in)
                         `OP_S: begin
                             if (translation) begin

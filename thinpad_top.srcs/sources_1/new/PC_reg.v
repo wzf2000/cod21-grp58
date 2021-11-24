@@ -110,7 +110,7 @@ always @(posedge clk or posedge rst) begin
         end
         pc_ram_addr <= 0;
         pc_ram_en <= 0;
-        pre_stall <= 0;
+        pre_stall <= 1;
         mem_phase <= 0;
         bubble <= 0;
         excpreq_reg <= 0;

@@ -90,6 +90,7 @@ module ppl_ex_mem(
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
+        mem_pc <= 32'b0;
         mem_alu_opcode <= `OP_NOP;
         mem_alu_funct3 <= `FUNCT3_NOP;
         mem_regd_en <= 0;
@@ -133,6 +134,7 @@ always @(posedge clk or posedge rst) begin
         tlb_virtual <= tlb_virtual_update;
         tlb_physical <= tlb_physical_update;
         if (ctrl) begin
+            mem_pc <= mem_pc;
             mem_alu_opcode <= mem_alu_opcode;
             mem_alu_funct3 <= mem_alu_funct3;
             mem_regd_en <= mem_regd_en;
@@ -168,6 +170,7 @@ always @(posedge clk or posedge rst) begin
             excpreq_out <= 1;
         end
         else begin
+            mem_pc <= 32'b0;
             mem_alu_opcode <= `OP_NOP;
             mem_alu_funct3 <= `FUNCT3_NOP;
             mem_regd_en <= 0;
@@ -211,6 +214,7 @@ always @(posedge clk or posedge rst) begin
         tlb_virtual <= tlb_virtual_update;
         tlb_physical <= tlb_physical_update;
         if (ctrl) begin
+            mem_pc <= 32'b0;
             mem_alu_opcode <= mem_alu_opcode;
             mem_alu_funct3 <= mem_alu_funct3;
             mem_regd_en <= mem_regd_en;
@@ -246,6 +250,7 @@ always @(posedge clk or posedge rst) begin
             excpreq_out <= 0;
         end
         else begin
+            mem_pc <= ex_pc;
             mem_alu_opcode <= ex_alu_opcode;
             mem_alu_funct3 <= ex_alu_funct3;
             mem_regd_en <= ex_regd_en;
