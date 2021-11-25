@@ -438,7 +438,7 @@ always @(*) begin
                         imm = {{20{instr[31]}}, instr[31:20]};
                         ret_addr = pc_in + 4;
                         branch_flag_out = 1;
-                        branch_addr_out = (regs1_out + {{19{instr[31]}}, instr[31:20], 1'b0}) & (~32'h00000001);
+                        branch_addr_out = (regs1_out + {{20{instr[31]}}, instr[31:20]}) & (~32'h00000001);
                     end
                 end
                 `OP_CSR: begin
