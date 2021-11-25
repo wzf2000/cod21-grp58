@@ -247,10 +247,12 @@ wire if_en_out;
 wire[31:0] if_addr_out;
 wire[31:0] if_data_out;
 wire[31:0] if_pc_out;
+wire[31:0] if_pc_next_out;
 wire if_bubble;
 
 // ID stage input
 wire[31:0] id_pc_in;
+wire[31:0] id_pc_next_in;
 wire[31:0] id_instr_in;
 wire[31:0] id_regs1_in;
 wire[31:0] id_regs2_in;
@@ -509,6 +511,7 @@ PC_reg pc_reg(
     .pc(if_pc_out),
     .pc_ram_en(if_en_out),
     .bubble(if_bubble),
+    .pc_next_out(if_pc_next_out),
     .state(leds[3:0])
 );
 
@@ -518,6 +521,7 @@ ppl_if_id if_id(
     .rst(reset_global),
 
     .if_pc(if_pc_out),
+    .if_pc_next(if_pc_next_out),
 
     .stall(stall),
     .excpreq_out(id_excpreq_in),
@@ -529,7 +533,8 @@ ppl_if_id if_id(
     .branch_predict(id_branch_flag_out), // 1: jump, 0: not jump
 
     .id_pc(id_pc_in),
-    .id_instr(id_instr_in)
+    .id_instr(id_instr_in),
+    .id_pc_next(id_pc_next_in)
 );
 
 // register file
@@ -550,6 +555,7 @@ Regfile regfile(
 ppl_id id(
     .rst(reset_global),
     .pc_in(id_pc_in),
+    .pc_next_in(id_pc_next_in),
     .instr(id_instr_in),
 
     .regs1_in(id_regs1_in),

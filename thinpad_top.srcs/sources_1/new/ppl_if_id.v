@@ -5,6 +5,7 @@ module ppl_if_id(
     input wire rst,
 
     input wire[31:0] if_pc,
+    input wire[31:0] if_pc_next,
 
     input wire stall,
     output reg excpreq_out,
@@ -16,34 +17,40 @@ module ppl_if_id(
     input wire branch_predict, // 1: jump, 0: not jump
 
     output reg[31:0] id_pc,
-    output reg[31:0] id_instr
+    output reg[31:0] id_instr,
+    output reg[31:0] id_pc_next
 );
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         id_pc <= 32'b0;
         id_instr <= 32'b0;
+        id_pc_next <= 32'b0;
         excpreq_out <= 0;
     end
     else begin
         if (stall) begin
             id_pc <= id_pc;
             id_instr <= id_instr;
+            id_pc_next <= id_pc_next;
             excpreq_out <= 0;
         end
         else if (excp[1]) begin
             id_pc <= 32'b0;
             id_instr <= 32'b0;
+            id_pc_next <= 32'b0;
             excpreq_out <= 0;
         end
         else if (branch_predict | if_bubble) begin
             id_pc <= 32'b0;
             id_instr <= 32'b0;
+            id_pc_next <= 32'b0;
             excpreq_out <= excp[0] & !excp[1];
         end
         else begin
             id_pc <= if_pc;
             id_instr <= ram_data;
+            id_pc_next <= if_pc_next;
             excpreq_out <= excp[0] & !excp[1];
         end
     end

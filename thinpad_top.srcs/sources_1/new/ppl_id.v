@@ -5,6 +5,7 @@
 module ppl_id(
     input wire rst,
     input wire[31:0] pc_in,
+    input wire[31:0] pc_next_in,
     input wire[31:0] instr,
 
     input wire[31:0] regs1_in,
@@ -60,7 +61,7 @@ module ppl_id(
     output reg[31:0] mem_addr,
 
     output reg[31:0] ret_addr,
-    output reg branch_flag_out,
+    output reg branch_flag_out, //1: wrong prediction, 0: right prediction 
     output reg critical_flag_out,
     output reg[31:0] branch_addr_out,
     output reg tlb_flush,
@@ -317,8 +318,16 @@ always @(*) begin
                               || funct3 == `FUNCT3_BGE && $signed(regs1_out) >= $signed(regs2_out)
                               || funct3 == `FUNCT3_BLTU && regs1_out < regs2_out
                               || funct3 == `FUNCT3_BGEU && regs1_out >= regs2_out) begin
-                            branch_flag_out = 1;
                             branch_addr_out = pc_in + {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
+                            if (branch_addr_out != pc_next_in) begin
+                                branch_flag_out = 1;
+                            end
+                        end
+                        else begin
+                            if ((pc_in+4) != pc_next_in) begin
+                                branch_flag_out = 1;
+                                branch_addr_out = pc_in + 4;
+                            end
                         end
                     end
                 endcase
@@ -344,8 +353,10 @@ always @(*) begin
                     regs2_en = 0;
                     imm = offset;
                     ret_addr = pc_in + 4;
-                    branch_flag_out = 1;
                     branch_addr_out = (pc_in + (offset << 1));
+                    if (branch_addr_out!=pc_next_in) begin
+                        branch_flag_out = 1;
+                    end
                 end
             end
             `OP_JALR: begin

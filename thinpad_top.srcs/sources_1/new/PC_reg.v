@@ -39,12 +39,14 @@ module PC_reg(
     output reg[31:0] pc,
     output reg pc_ram_en,
     output reg bubble,
+    output wire[31:0] pc_next_out,
     output wire[3:0] state
 );
 
 reg branch_flag_out;
 reg critical_flag_out;
 reg[31:0] branch_addr_out;
+reg[1:0] prediction_history_state;
 wire branch_flag;
 wire critical_flag;
 wire[31:0] branch_addr;
@@ -60,7 +62,8 @@ assign excpreq = excpreq_reg;
 reg pre_stall;
 reg [1:0] mem_phase;
 wire translation = (~priv[0]) & satp[31];
-wire [31:0] pc_next = pc + 4;
+wire [31:0] pc_next = prediction_history_state[1] ? id_branch_addr : pc + 4;
+assign pc_next_out = pc_next;
 
 //TLB
 reg tlb_valid;
@@ -84,6 +87,7 @@ always @(posedge clk or posedge rst) begin
         branch_flag_out <= 0;
         critical_flag_out <= 0;
         branch_addr_out <= 32'b0;
+        prediction_history_state <=2'b00;
     end
     else if (stall) begin
         pre_stall <= stall;
@@ -177,6 +181,38 @@ always @(posedge clk or posedge rst) begin
                     critical_flag_out <= 0;
                     branch_addr_out <= 32'b0;
                 end
+            end
+            if (id_branch_flag) begin //wrong branch prediction in if
+                case (prediction_history_state)
+                    2'b00: begin
+                        prediction_history_state <= 2'b01;
+                    end
+                    2'b01: begin
+                        prediction_history_state <= 2'b10;
+                    end
+                    2'b10: begin
+                        prediction_history_state <= 2'b01;
+                    end
+                    2'b11: begin
+                        prediction_history_state <= 2'b10;
+                    end
+                endcase
+            end
+            else begin //correct branch prediction in if
+                case (prediction_history_state)
+                    2'b00: begin
+                        prediction_history_state <= 2'b00;
+                    end
+                    2'b01: begin
+                        prediction_history_state <= 2'b00;
+                    end
+                    2'b10: begin
+                        prediction_history_state <= 2'b11;
+                    end
+                    2'b11: begin
+                        prediction_history_state <= 2'b11;
+                    end
+                endcase
             end
         end
         else if (pre_stall) begin
