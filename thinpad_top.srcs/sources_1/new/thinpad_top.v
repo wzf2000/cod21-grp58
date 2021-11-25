@@ -158,6 +158,14 @@ wire mie_we;
 wire mip_we;
 wire satp_we;
 wire privilege_we;
+wire mtval_we;
+wire mideleg_we;
+wire medeleg_we;
+wire sepc_we;
+wire scause_we;
+wire stval_we;
+wire stvec_we;
+wire sscratch_we;
 //input
 wire [31:0] mtvec_wdata;
 wire [31:0] mscratch_wdata;
@@ -168,6 +176,14 @@ wire [31:0] mie_wdata;
 wire [31:0] mip_wdata;
 wire [31:0] satp_wdata;
 wire [1:0] privilege_wdata;
+wire [31:0] mtval_wdata;
+wire [31:0] mideleg_wdata;
+wire [31:0] medeleg_wdata;
+wire [31:0] sepc_wdata;
+wire [31:0] scause_wdata;
+wire [31:0] stval_wdata;
+wire [31:0] stvec_wdata;
+wire [31:0] sscratch_wdata;
 //output
 wire[31:0] mtvec_o;
 wire[31:0] mscratch_o;
@@ -178,7 +194,14 @@ wire[31:0] mie_o;
 wire[31:0] mip_o;
 wire[31:0] satp_o;
 wire[1:0] privilege_o;
-
+wire[31:0] mtval_o;
+wire[31:0] mideleg_o;
+wire[31:0] medeleg_o;
+wire[31:0] sepc_o;
+wire[31:0] scause_o;
+wire[31:0] stval_o;
+wire[31:0] stvec_o;
+wire[31:0] sscratch_o;
 csr csr_inst (
     .clk(clk_global),
     .rst(reset_global),
@@ -193,6 +216,14 @@ csr csr_inst (
     .mip_we(mip_we),
     .satp_we(satp_we),
     .privilege_we(privilege_we),
+    .mtval_we(mtval_we),
+    .mideleg_we(mideleg_we),
+    .medeleg_we(medeleg_we),
+    .sepc_we(sepc_we),
+    .scause_we(scause_we),
+    .stval_we(stval_we),
+    .stvec_we(stvec_we),
+    .sscratch_we(sscratch_we),
     //input
     .mtvec_wdata(mtvec_wdata),
     .mscratch_wdata(mscratch_wdata),
@@ -203,6 +234,14 @@ csr csr_inst (
     .mip_wdata(mip_wdata),
     .satp_wdata(satp_wdata),
     .privilege_wdata(privilege_wdata),
+    .mtval_wdata(mtval_wdata),
+    .mideleg_wdata(mideleg_wdata),
+    .medeleg_wdata(medeleg_wdata),
+    .sepc_wdata(sepc_wdata),
+    .scause_wdata(scause_wdata),
+    .stval_wdata(stval_wdata),
+    .stvec_wdata(stvec_wdata),
+    .sscratch_wdata(sscratch_wdata),
     //output
     .mtvec_o(mtvec_o),
     .mscratch_o(mscratch_o),
@@ -212,7 +251,15 @@ csr csr_inst (
     .mie_o(mie_o),
     .mip_o(mip_o),
     .satp_o(satp_o),
-    .privilege_o(privilege_o)
+    .privilege_o(privilege_o),
+    .mtval_o(mtval_o),
+    .mideleg_o(mideleg_o),
+    .medeleg_o(medeleg_o),
+    .sepc_o(sepc_o),
+    .scause_o(scause_o),
+    .stval_o(stval_o),
+    .stvec_o(stvec_o),
+    .sscratch_o(sscratch_o)
 );
 
 // used to stop pipelines
@@ -252,10 +299,14 @@ wire[31:0] if_mepc_out;
 wire[31:0] if_mcause_out;
 wire[31:0] if_mstatus_out;
 wire[1:0] if_priv_out;
+wire[31:0] if_sepc_out;
+wire[31:0] if_scause_out;
 wire if_mepc_we_out;
 wire if_mcause_we_out;
 wire if_mstatus_we_out;
 wire if_priv_we_out;
+wire if_sepc_we_out;
+wire if_scause_we_out;
 
 // ID stage input
 wire[31:0] id_pc_in;
@@ -267,10 +318,14 @@ wire[31:0] id_mepc_in;
 wire[31:0] id_mcause_in;
 wire[31:0] id_mstatus_in;
 wire[1:0] id_priv_in;
+wire[31:0] id_sepc_in;
+wire[31:0] id_scause_in;
 wire id_mepc_we_in;
 wire id_mcause_we_in;
 wire id_mstatus_we_in;
 wire id_priv_we_in;
+wire id_sepc_we_in;
+wire id_scause_we_in;
 
 // ID stage output
 wire id_branch_flag_out;
@@ -300,6 +355,14 @@ wire[31:0] id_mie_data;
 wire[31:0] id_mip_data;
 wire[31:0] id_satp_data;
 wire[1:0] id_priv_data;
+wire[31:0] id_mtval_data;
+wire[31:0] id_mideleg_data;
+wire[31:0] id_medeleg_data;
+wire[31:0] id_sepc_data;
+wire[31:0] id_scause_data;
+wire[31:0] id_stval_data;
+wire[31:0] id_stvec_data;
+wire[31:0] id_sscratch_data;
 
 wire id_mtvec_we;
 wire id_mscratch_we;
@@ -310,6 +373,14 @@ wire id_mie_we;
 wire id_mip_we;
 wire id_satp_we;
 wire id_priv_we;
+wire id_mtval_we;
+wire id_mideleg_we;
+wire id_medeleg_we;
+wire id_sepc_we;
+wire id_scause_we;
+wire id_stval_we;
+wire id_stvec_we;
+wire id_sscratch_we;
 
 wire id_tlb_flush;
 
@@ -322,6 +393,14 @@ wire[31:0] ex_mie_data;
 wire[31:0] ex_mip_data;
 wire[31:0] ex_satp_data;
 wire[1:0] ex_priv_data;
+wire[31:0] ex_mtval_data;
+wire[31:0] ex_mideleg_data;
+wire[31:0] ex_medeleg_data;
+wire[31:0] ex_sepc_data;
+wire[31:0] ex_scause_data;
+wire[31:0] ex_stval_data;
+wire[31:0] ex_stvec_data;
+wire[31:0] ex_sscratch_data;
 
 wire ex_mtvec_we;
 wire ex_mscratch_we;
@@ -332,6 +411,14 @@ wire ex_mie_we;
 wire ex_mip_we;
 wire ex_satp_we;
 wire ex_priv_we;
+wire ex_mtval_we;
+wire ex_mideleg_we;
+wire ex_medeleg_we;
+wire ex_sepc_we;
+wire ex_scause_we;
+wire ex_stval_we;
+wire ex_stvec_we;
+wire ex_sscratch_we;
 
 // EXE stage input
 wire[31:0] ex_pc_in;
@@ -373,6 +460,14 @@ wire[31:0] ex_mie_data_out;
 wire[31:0] ex_mip_data_out;
 wire[31:0] ex_satp_data_out;
 wire[1:0] ex_priv_data_out;
+wire [31:0] ex_mtval_data_out;
+wire [31:0] ex_mideleg_data_out;
+wire [31:0] ex_medeleg_data_out;
+wire [31:0] ex_sepc_data_out;
+wire [31:0] ex_scause_data_out;
+wire [31:0] ex_stval_data_out;
+wire [31:0] ex_stvec_data_out;
+wire [31:0] ex_sscratch_data_out;
 
 wire ex_mtvec_we_out;
 wire ex_mscratch_we_out;
@@ -383,6 +478,14 @@ wire ex_mie_we_out;
 wire ex_mip_we_out;
 wire ex_satp_we_out;
 wire ex_priv_we_out;
+wire ex_mtval_we_out;
+wire ex_mideleg_we_out;
+wire ex_medeleg_we_out;
+wire ex_sepc_we_out;
+wire ex_scause_we_out;
+wire ex_stval_we_out;
+wire ex_stvec_we_out;
+wire ex_sscratch_we_out;
 
 // MEM stage input
 wire[31:0] mem_pc_in;
@@ -408,6 +511,14 @@ wire[31:0] mem_mie_data;
 wire[31:0] mem_mip_data;
 wire[31:0] mem_satp_data;
 wire[1:0] mem_priv_data;
+wire[31:0] mem_mtval_data;
+wire[31:0] mem_mideleg_data;
+wire[31:0] mem_medeleg_data;
+wire[31:0] mem_sepc_data;
+wire[31:0] mem_scause_data;
+wire[31:0] mem_stval_data;
+wire[31:0] mem_stvec_data;
+wire[31:0] mem_sscratch_data;
 
 wire mem_mtvec_we;
 wire mem_mscratch_we;
@@ -418,6 +529,14 @@ wire mem_mie_we;
 wire mem_mip_we;
 wire mem_satp_we;
 wire mem_priv_we;
+wire mem_mtval_we;
+wire mem_mideleg_we;
+wire mem_medeleg_we;
+wire mem_sepc_we;
+wire mem_scause_we;
+wire mem_stval_we;
+wire mem_stvec_we;
+wire mem_sscratch_we;
 
 // SRAM controller
 wire[31:0] mem_read_data_in;
@@ -517,6 +636,8 @@ PC_reg pc_reg(
     .mem_addr_retro(if_data_out),
     
     .mtvec_in(mtvec_o),
+    .stvec_in(stvec_o),
+    .medeleg_in(medeleg_o),
     .mstatus_in(mstatus_o),
     .priv_in(privilege_o),
 
@@ -524,11 +645,15 @@ PC_reg pc_reg(
     .mcause_out(if_mcause_out),
     .mstatus_out(if_mstatus_out),
     .priv_out(if_priv_out),
+    .sepc_out(if_sepc_out),
+    .scause_out(if_scause_out),
 
     .mepc_we_out(if_mepc_we_out),
     .mcause_we_out(if_mcause_we_out),
     .mstatus_we_out(if_mstatus_we_out),
     .priv_we_out(if_priv_we_out),
+    .sepc_we_out(if_sepc_we_out),
+    .scause_we_out(if_scause_we_out),
 
     .satp(satp_o),
     .priv(privilege_o),
@@ -553,11 +678,15 @@ ppl_if_id if_id(
     .if_mcause(if_mcause_out),
     .if_mstatus(if_mstatus_out),
     .if_priv(if_priv_out),
+    .if_sepc(if_sepc_out),
+    .if_scause(if_scause_out),
 
     .if_mepc_we(if_mepc_we_out),
     .if_mcause_we(if_mcause_we_out),
     .if_mstatus_we(if_mstatus_we_out),
     .if_priv_we(if_priv_we_out),
+    .if_sepc_we(if_sepc_we_out),
+    .if_scause_we(if_scause_we_out),
 
     .stall(stall),
     .excpreq_out(id_excpreq_in),
@@ -572,11 +701,15 @@ ppl_if_id if_id(
     .id_mcause(id_mcause_in),
     .id_mstatus(id_mstatus_in),
     .id_priv(id_priv_in),
+    .id_sepc(id_sepc_in),
+    .id_scause(id_scause_in),
 
     .id_mepc_we(id_mepc_we_in),
     .id_mcause_we(id_mcause_we_in),
     .id_mstatus_we(id_mstatus_we_in),
     .id_priv_we(id_priv_we_in),
+    .id_sepc_we(id_sepc_we_in),
+    .id_scause_we(id_scause_we_in),
 
     .id_pc(id_pc_in),
     .id_instr(id_instr_in)
@@ -612,11 +745,15 @@ ppl_id id(
     .if_mcause(id_mcause_in),
     .if_mstatus(id_mstatus_in),
     .if_priv(id_priv_in),
+    .if_sepc(id_sepc_in),
+    .if_scause(id_scause_in),
 
     .if_mepc_we(id_mepc_we_in),
     .if_mcause_we(id_mcause_we_in),
     .if_mstatus_we(id_mstatus_we_in),
     .if_priv_we(id_priv_we_in),
+    .if_sepc_we(id_sepc_we_in),
+    .if_scause_we(id_scause_we_in),
 
     // EXE stage
     .ex_alu_opcode_in(ex_alu_opcode_out),
@@ -633,6 +770,14 @@ ppl_id id(
     .ex_mip_we(ex_mip_we_out),
     .ex_satp_we(ex_satp_we_out),
     .ex_privilege_we(ex_priv_we_out),
+    .ex_mtval_we(ex_mtval_we_out),
+    .ex_mideleg_we(ex_mideleg_we_out),
+    .ex_medeleg_we(ex_medeleg_we_out),
+    .ex_sepc_we(ex_sepc_we_out),
+    .ex_scause_we(ex_scause_we_out),
+    .ex_stval_we(ex_stval_we_out),
+    .ex_stvec_we(ex_stvec_we_out),
+    .ex_sscratch_we(ex_sscratch_we_out),
 
     .ex_mtvec_data_in(ex_mtvec_data_out),
     .ex_mscratch_data_in(ex_mscratch_data_out),
@@ -643,6 +788,14 @@ ppl_id id(
     .ex_mip_data_in(ex_mip_data_out),
     .ex_satp_data_in(ex_satp_data_out),
     .ex_privilege_data_in(ex_priv_data_out),
+    .ex_mtval_data_in(ex_mtval_data_out),
+    .ex_mideleg_data_in(ex_mideleg_data_out),
+    .ex_medeleg_data_in(ex_medeleg_data_out),
+    .ex_sepc_data_in(ex_sepc_data_out),
+    .ex_scause_data_in(ex_scause_data_out),
+    .ex_stval_data_in(ex_stval_data_out),
+    .ex_stvec_data_in(ex_stvec_data_out),
+    .ex_sscratch_data_in(ex_sscratch_data_out),
 
     // MEM stage
     .mem_regd_en_in(mem_regd_en_out),
@@ -679,6 +832,14 @@ ppl_id id(
     .mip_data_in(mip_o),
     .satp_data_in(satp_o),
     .privilege_data_in(privilege_o),
+    .mtval_data_in(mtval_o),
+    .mideleg_data_in(mideleg_o),
+    .medeleg_data_in(medeleg_o),
+    .sepc_data_in(sepc_o),
+    .scause_data_in(scause_o),
+    .stval_data_in(stval_o),
+    .stvec_data_in(stvec_o),
+    .sscratch_data_in(sscratch_o),
 
     .mtvec_we(id_mtvec_we),
     .mscratch_we(id_mscratch_we),
@@ -689,6 +850,14 @@ ppl_id id(
     .mip_we(id_mip_we),
     .satp_we(id_satp_we),
     .privilege_we(id_priv_we),
+    .mtval_we(id_mtval_we),
+    .mideleg_we(id_mideleg_we),
+    .medeleg_we(id_medeleg_we),
+    .sepc_we(id_sepc_we),
+    .scause_we(id_scause_we),
+    .stval_we(id_stval_we),
+    .stvec_we(id_stvec_we),
+    .sscratch_we(id_sscratch_we),
 
     .mtvec_data_out(id_mtvec_data),
     .mscratch_data_out(id_mscratch_data),
@@ -699,6 +868,14 @@ ppl_id id(
     .mip_data_out(id_mip_data),
     .satp_data_out(id_satp_data),
     .privilege_data_out(id_priv_data),
+    .mtval_data_out(id_mtval_data),
+    .mideleg_data_out(id_mideleg_data),
+    .medeleg_data_out(id_medeleg_data),
+    .sepc_data_out(id_sepc_data),
+    .scause_data_out(id_scause_data),
+    .stval_data_out(id_stval_data),
+    .stvec_data_out(id_stvec_data),
+    .sscratch_data_out(id_sscratch_data),
 
     .stallreq(stallreq_id),
     .excpreq_in(id_excpreq_in),
@@ -749,6 +926,14 @@ ppl_id_ex id_ex(
     .id_mip_we(id_mip_we),
     .id_priv_we(id_priv_we),
     .id_satp_we(id_satp_we),
+    .id_mtval_we(id_mtval_we),
+    .id_mideleg_we(id_mideleg_we),
+    .id_medeleg_we(id_medeleg_we),
+    .id_sepc_we(id_sepc_we),
+    .id_scause_we(id_scause_we),
+    .id_stval_we(id_stval_we),
+    .id_stvec_we(id_stvec_we),
+    .id_sscratch_we(id_sscratch_we),
 
     .ex_mtvec_we(ex_mtvec_we),
     .ex_mscratch_we(ex_mscratch_we),
@@ -759,6 +944,14 @@ ppl_id_ex id_ex(
     .ex_mip_we(ex_mip_we),
     .ex_priv_we(ex_priv_we),
     .ex_satp_we(ex_satp_we),
+    .ex_mtval_we(ex_mtval_we),
+    .ex_mideleg_we(ex_mideleg_we),
+    .ex_medeleg_we(ex_medeleg_we),
+    .ex_sepc_we(ex_sepc_we),
+    .ex_scause_we(ex_scause_we),
+    .ex_stval_we(ex_stval_we),
+    .ex_stvec_we(ex_stvec_we),
+    .ex_sscratch_we(ex_sscratch_we),
 
     .id_mtvec_data(id_mtvec_data),
     .id_mscratch_data(id_mscratch_data),
@@ -769,6 +962,14 @@ ppl_id_ex id_ex(
     .id_mip_data(id_mip_data),
     .id_satp_data(id_satp_data),
     .id_priv_data(id_priv_data),
+    .id_mtval_data(id_mtval_data),
+    .id_mideleg_data(id_mideleg_data),
+    .id_medeleg_data(id_medeleg_data),
+    .id_sepc_data(id_sepc_data),
+    .id_scause_data(id_scause_data),
+    .id_stval_data(id_stval_data),
+    .id_stvec_data(id_stvec_data),
+    .id_sscratch_data(id_sscratch_data),
 
     .ex_mtvec_data(ex_mtvec_data),
     .ex_mscratch_data(ex_mscratch_data),
@@ -778,7 +979,15 @@ ppl_id_ex id_ex(
     .ex_mie_data(ex_mie_data),
     .ex_mip_data(ex_mip_data),
     .ex_satp_data(ex_satp_data),
-    .ex_priv_data(ex_priv_data)
+    .ex_priv_data(ex_priv_data),
+    .ex_mtval_data(ex_mtval_data),
+    .ex_mideleg_data(ex_mideleg_data),
+    .ex_medeleg_data(ex_medeleg_data),
+    .ex_sepc_data(ex_sepc_data),
+    .ex_scause_data(ex_scause_data),
+    .ex_stval_data(ex_stval_data),
+    .ex_stvec_data(ex_stvec_data),
+    .ex_sscratch_data(ex_sscratch_data)
 );
 
 // EXE stage
@@ -810,6 +1019,16 @@ ppl_ex ex(
     .mip_in(ex_mip_data),
     .satp_in(ex_satp_data),
     .priv_in(ex_priv_data),
+    .mtval_in(ex_mtval_data),
+    .mideleg_in(ex_mideleg_data),
+    .medeleg_in(ex_medeleg_data),
+    .sepc_in(ex_sepc_data),
+    .scause_in(ex_scause_data),
+    .stval_in(ex_stval_data),
+    .stvec_in(ex_stvec_data),
+    .sscratch_in(ex_sscratch_data),
+
+    .mtime_in(mtime),
 
     .mtvec_out(ex_mtvec_data_out),
     .mscratch_out(ex_mscratch_data_out),
@@ -820,6 +1039,14 @@ ppl_ex ex(
     .mip_out(ex_mip_data_out),
     .satp_out(ex_satp_data_out),
     .priv_out(ex_priv_data_out),
+    .mtval_out(ex_mtval_data_out),
+    .mideleg_out(ex_mideleg_data_out),
+    .medeleg_out(ex_medeleg_data_out),
+    .sepc_out(ex_sepc_data_out),
+    .scause_out(ex_scause_data_out),
+    .stval_out(ex_stval_data_out),
+    .stvec_out(ex_stvec_data_out),
+    .sscratch_out(ex_sscratch_data_out),
 
     .mtvec_we_in(ex_mtvec_we),
     .mscratch_we_in(ex_mscratch_we),
@@ -830,6 +1057,14 @@ ppl_ex ex(
     .mip_we_in(ex_mip_we),
     .satp_we_in(ex_satp_we),
     .priv_we_in(ex_priv_we),
+    .mtval_we_in(ex_mtval_we),
+    .mideleg_we_in(ex_mideleg_we),
+    .medeleg_we_in(ex_medeleg_we),
+    .sepc_we_in(ex_sepc_we),
+    .scause_we_in(ex_scause_we),
+    .stval_we_in(ex_stval_we),
+    .stvec_we_in(ex_stvec_we),
+    .sscratch_we_in(ex_sscratch_we),
 
     .mtvec_we_out(ex_mtvec_we_out),
     .mscratch_we_out(ex_mscratch_we_out),
@@ -840,6 +1075,14 @@ ppl_ex ex(
     .mip_we_out(ex_mip_we_out),
     .satp_we_out(ex_satp_we_out),
     .priv_we_out(ex_priv_we_out),
+    .mtval_we_out(ex_mtval_we_out),
+    .mideleg_we_out(ex_mideleg_we_out),
+    .medeleg_we_out(ex_medeleg_we_out),
+    .sepc_we_out(ex_sepc_we_out),
+    .scause_we_out(ex_scause_we_out),
+    .stval_we_out(ex_stval_we_out),
+    .stvec_we_out(ex_stvec_we_out),
+    .sscratch_we_out(ex_sscratch_we_out),
 
     .alu_opcode_out(ex_alu_opcode_out),
     .alu_funct3_out(ex_alu_funct3_out),
@@ -875,6 +1118,7 @@ ppl_ex_mem ex_mem(
     .ex_mem_be_n(ex_mem_be_n_out),
     .ex_satp_rd(ex_satp_data_out), //instr that change them have no L/S -> no address translation anyway
     .ex_priv_rd(ex_priv_data_out),
+    
     .ctrl(ctrl_back),
     .mem_phase_retro(mem_phase_back),
     .mem_addr_retro(mem_addr_back),
@@ -882,47 +1126,7 @@ ppl_ex_mem ex_mem(
     .tlb_virtual_update(tlb_virtual_update),
     .tlb_physical_update(tlb_physical_update),
 
-    .ex_mtvec_we(ex_mtvec_we_out),
-    .ex_mscratch_we(ex_mscratch_we_out),
-    .ex_mepc_we(ex_mepc_we_out),
-    .ex_mcause_we(ex_mcause_we_out),
-    .ex_mstatus_we(ex_mstatus_we_out),
-    .ex_mie_we(ex_mie_we_out),
-    .ex_mip_we(ex_mip_we_out),
-    .ex_priv_we(ex_priv_we_out),
-    .ex_satp_we(ex_satp_we_out),
-
     .mem_pc(mem_pc_in),
-    .mem_mtvec_we(mem_mtvec_we),
-    .mem_mscratch_we(mem_mscratch_we),
-    .mem_mepc_we(mem_mepc_we),
-    .mem_mcause_we(mem_mcause_we),
-    .mem_mstatus_we(mem_mstatus_we),
-    .mem_mie_we(mem_mie_we),
-    .mem_mip_we(mem_mip_we),
-    .mem_priv_we(mem_priv_we),
-    .mem_satp_we(mem_satp_we),
-
-    .ex_mtvec_data(ex_mtvec_data_out),
-    .ex_mscratch_data(ex_mscratch_data_out),
-    .ex_mepc_data(ex_mepc_data_out),
-    .ex_mcause_data(ex_mcause_data_out),
-    .ex_mstatus_data(ex_mstatus_data_out),
-    .ex_mie_data(ex_mie_data_out),
-    .ex_mip_data(ex_mip_data_out),
-    .ex_satp_data(ex_satp_data_out),
-    .ex_priv_data(ex_priv_data_out),
-
-    .mem_mtvec_data(mem_mtvec_data),
-    .mem_mscratch_data(mem_mscratch_data),
-    .mem_mepc_data(mem_mepc_data),
-    .mem_mcause_data(mem_mcause_data),
-    .mem_mstatus_data(mem_mstatus_data),
-    .mem_mie_data(mem_mie_data),
-    .mem_mip_data(mem_mip_data),
-    .mem_satp_data(mem_satp_data),
-    .mem_priv_data(mem_priv_data),
-
     .mem_alu_opcode(mem_alu_opcode_in),
     .mem_alu_funct3(mem_alu_funct3_in),
     .mem_regd_en(mem_regd_en_in),
@@ -935,6 +1139,78 @@ ppl_ex_mem ex_mem(
     .satp_rd(satp_rd),
     .priv_rd(priv_rd),
     .mem_phase(ex_mem_phase),
+
+    .ex_mtvec_we(ex_mtvec_we_out),
+    .ex_mscratch_we(ex_mscratch_we_out),
+    .ex_mepc_we(ex_mepc_we_out),
+    .ex_mcause_we(ex_mcause_we_out),
+    .ex_mstatus_we(ex_mstatus_we_out),
+    .ex_mie_we(ex_mie_we_out),
+    .ex_mip_we(ex_mip_we_out),
+    .ex_priv_we(ex_priv_we_out),
+    .ex_satp_we(ex_satp_we_out),
+    .ex_mtval_we(ex_mtval_we_out),
+    .ex_mideleg_we(ex_mideleg_we_out),
+    .ex_medeleg_we(ex_medeleg_we_out),
+    .ex_sepc_we(ex_sepc_we_out),
+    .ex_scause_we(ex_scause_we_out),
+    .ex_stval_we(ex_stval_we_out),
+    .ex_stvec_we(ex_stvec_we_out),
+    .ex_sscratch_we(ex_sscratch_we_out),
+
+    .mem_mtvec_we(mem_mtvec_we),
+    .mem_mscratch_we(mem_mscratch_we),
+    .mem_mepc_we(mem_mepc_we),
+    .mem_mcause_we(mem_mcause_we),
+    .mem_mstatus_we(mem_mstatus_we),
+    .mem_mie_we(mem_mie_we),
+    .mem_mip_we(mem_mip_we),
+    .mem_priv_we(mem_priv_we),
+    .mem_satp_we(mem_satp_we),
+    .mem_mtval_we(mem_mtval_we),
+    .mem_mideleg_we(mem_mideleg_we),
+    .mem_medeleg_we(mem_medeleg_we),
+    .mem_sepc_we(mem_sepc_we),
+    .mem_scause_we(mem_scause_we),
+    .mem_stval_we(mem_stval_we),
+    .mem_stvec_we(mem_stvec_we),
+    .mem_sscratch_we(mem_sscratch_we),
+
+    .ex_mtvec_data(ex_mtvec_data_out),
+    .ex_mscratch_data(ex_mscratch_data_out),
+    .ex_mepc_data(ex_mepc_data_out),
+    .ex_mcause_data(ex_mcause_data_out),
+    .ex_mstatus_data(ex_mstatus_data_out),
+    .ex_mie_data(ex_mie_data_out),
+    .ex_mip_data(ex_mip_data_out),
+    .ex_satp_data(ex_satp_data_out),
+    .ex_priv_data(ex_priv_data_out),
+    .ex_mtval_data(ex_mtval_data_out),
+    .ex_mideleg_data(ex_mideleg_data_out),
+    .ex_medeleg_data(ex_medeleg_data_out),
+    .ex_sepc_data(ex_sepc_data_out),
+    .ex_scause_data(ex_scause_data_out),
+    .ex_stval_data(ex_stval_data_out),
+    .ex_stvec_data(ex_stvec_data_out),
+    .ex_sscratch_data(ex_sscratch_data_out),
+
+    .mem_mtvec_data(mem_mtvec_data),
+    .mem_mscratch_data(mem_mscratch_data),
+    .mem_mepc_data(mem_mepc_data),
+    .mem_mcause_data(mem_mcause_data),
+    .mem_mstatus_data(mem_mstatus_data),
+    .mem_mie_data(mem_mie_data),
+    .mem_mip_data(mem_mip_data),
+    .mem_satp_data(mem_satp_data),
+    .mem_priv_data(mem_priv_data),
+    .mem_mtval_data(mem_mtval_data),
+    .mem_mideleg_data(mem_mideleg_data),
+    .mem_medeleg_data(mem_medeleg_data),
+    .mem_sepc_data(mem_sepc_data),
+    .mem_scause_data(mem_scause_data),
+    .mem_stval_data(mem_stval_data),
+    .mem_stvec_data(mem_stvec_data),
+    .mem_sscratch_data(mem_sscratch_data),
 
     .tlb_valid(tlb_valid_pass),
     .tlb_virtual(tlb_virtual_pass),
@@ -955,15 +1231,14 @@ ppl_ex_mem ex_mem(
     .mem_en_in(mem_en_in),
     .mem_addr_in(mem_addr_in),
     .mem_be_n_in(mem_be_n_in),
-
     .virtual_addr(virtual_addr),
     .satp(satp_rd),
     .priv(priv_rd),
     .mem_phase(ex_mem_phase),
+
     .tlb_valid_in(tlb_valid_pass),
     .tlb_virtual_in(tlb_virtual_pass),
     .tlb_physical_in(tlb_physical_pass),
-
     .tlb_flush(id_tlb_flush),
     
     .ctrl_back(ctrl_back),
@@ -982,6 +1257,14 @@ ppl_ex_mem ex_mem(
     .mip_in(mem_mip_data),
     .satp_in(mem_satp_data),
     .priv_in(mem_priv_data),
+    .mtval_in(mem_mtval_data),
+    .mideleg_in(mem_mideleg_data),
+    .medeleg_in(mem_medeleg_data),
+    .sepc_in(mem_sepc_data),
+    .scause_in(mem_scause_data),
+    .stval_in(mem_stval_data),
+    .stvec_in(mem_stvec_data),
+    .sscratch_in(mem_sscratch_data),
 
     .mtvec_out(mtvec_wdata),
     .mscratch_out(mscratch_wdata),
@@ -992,6 +1275,14 @@ ppl_ex_mem ex_mem(
     .mip_out(mip_wdata),
     .satp_out(satp_wdata),
     .priv_out(privilege_wdata),
+    .mtval_out(mtval_wdata),
+    .mideleg_out(mideleg_wdata),
+    .medeleg_out(medeleg_wdata),
+    .sepc_out(sepc_wdata),
+    .scause_out(scause_wdata),
+    .stval_out(stval_wdata),
+    .stvec_out(stvec_wdata),
+    .sscratch_out(sscratch_wdata),
 
     .mtvec_we_in(mem_mtvec_we),
     .mscratch_we_in(mem_mscratch_we),
@@ -1002,6 +1293,14 @@ ppl_ex_mem ex_mem(
     .mip_we_in(mem_mip_we),
     .satp_we_in(mem_satp_we),
     .priv_we_in(mem_priv_we),
+    .mtval_we_in(mem_mtval_we),
+    .mideleg_we_in(mem_mideleg_we),
+    .medeleg_we_in(mem_medeleg_we),
+    .sepc_we_in(mem_sepc_we),
+    .scause_we_in(mem_scause_we),
+    .stval_we_in(mem_stval_we),
+    .stvec_we_in(mem_stvec_we),
+    .sscratch_we_in(mem_sscratch_we),
 
     .mtvec_we_out(mtvec_we),
     .mscratch_we_out(mscratch_we),
@@ -1012,6 +1311,14 @@ ppl_ex_mem ex_mem(
     .mip_we_out(mip_we),
     .satp_we_out(satp_we),
     .priv_we_out(privilege_we),
+    .mtval_we_out(mtval_we),
+    .mideleg_we_out(mideleg_we),
+    .medeleg_we_out(medeleg_we),
+    .sepc_we_out(sepc_we),
+    .scause_we_out(scause_we),
+    .stval_we_out(stval_we),
+    .stvec_we_out(stvec_we),
+    .sscratch_we_out(sscratch_we),
 
     .ram_addr(mem_addr_out),
     .ram_be_n(mem_be_n_out),

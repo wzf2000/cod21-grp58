@@ -118,8 +118,8 @@ always @(posedge clk or posedge rst) begin
         else satp <= satp;
         if(privilege_we) privilege <= privilege_wdata;
         else privilege <= privilege;
-        if(mtval_we) mtval <= mtval_wdata;
-        else mtval <= mtval;
+        // if(mtval_we) mtval <= mtval_wdata;
+        // else mtval <= mtval;
         if(mideleg_we) mideleg <= mideleg_wdata;
         else mideleg <= mideleg;
         if(medeleg_we) medeleg <= medeleg_wdata;
@@ -128,8 +128,8 @@ always @(posedge clk or posedge rst) begin
         else sepc <= sepc;
         if(scause_we) scause <= scause_wdata;
         else scause <= scause;
-        if(stval_we) stval <= stval_wdata;
-        else stval <= stval;
+        // if(stval_we) stval <= stval_wdata;
+        // else stval <= stval;
         if(stvec_we) stvec <= stvec_wdata;
         else stvec <= stvec;
         if(sscratch_we) sscratch <= sscratch_wdata;

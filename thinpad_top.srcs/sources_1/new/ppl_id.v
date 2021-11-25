@@ -17,11 +17,15 @@ module ppl_id(
     input wire [31:0] if_mcause,
     input wire [31:0] if_mstatus,
     input wire [1:0] if_priv,
+    input wire [31:0] if_sepc,
+    input wire [31:0] if_scause,
 
     input wire if_mepc_we,
     input wire if_mcause_we,
     input wire if_mstatus_we,
     input wire if_priv_we,
+    input wire if_sepc_we,
+    input wire if_scause_we,
 
     // EXE stage
     input wire[6:0] ex_alu_opcode_in,
@@ -224,11 +228,13 @@ always @(*) begin
 
         // {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
         {mtvec_we, mscratch_we, mie_we, mip_we, satp_we} = 5'b0;
-        mepc_we = if_mepc_we; //TODO: can be sepc
+        mepc_we = if_mepc_we;
         mcause_we = if_mcause_we;
         mstatus_we = if_mstatus_we;
         privilege_we = if_priv_we;
-        {mtval_we, mideleg_we, medeleg_we, sepc_we, scause_we, stval_we, stvec_we, sscratch_we} = 8'b0;
+        sepc_we = if_sepc_we;
+        scause_we = if_scause_we;
+        {mtval_we, mideleg_we, medeleg_we, stval_we, stvec_we, sscratch_we} = 6'b0;
 
         if (mip_data_out[7] & mie_data_out[7] & (mstatus_data_out[3] | ~privilege_data_out[0])) //MTIP && MTIE && (MIE || priv<M)
         begin //machine timer interrupt
@@ -445,25 +451,29 @@ always @(*) begin
                             reg_write = 1;
                             regs1_en = 1;
                             regs2_en = 0;
-                            case (instr[31:20])
-                                12'h305: mtvec_we = 1'b1;
-                                12'h340: mscratch_we = 1'b1;
-                                12'h341: mepc_we = 1'b1;
-                                12'h342: mcause_we = 1'b1;
-                                12'h300: mstatus_we = 1'b1;
-                                12'h304: mie_we = 1'b1;
-                                12'h344: mip_we = 1'b1;
-                                12'h180: satp_we = 1'b1;
-                                12'h343: mtval_we = 1'b1;
-                                12'h303: mideleg_we = 1'b1;
-                                12'h302: medeleg_we = 1'b1;
-                                12'h141: sepc_we = 1'b1;
-                                12'h142: scause_we = 1'b1;
-                                12'h143: stval_we = 1'b1;
-                                12'h105: stvec_we = 1'b1;
-                                12'h140: sscratch_we = 1'b1;
-                                default: mtvec_we = 1'b0; //pseudo instruction rdtime, rdtimeh included
-                            endcase
+                            if (regs1_addr == 0) begin
+                            end
+                            else begin
+                                case (instr[31:20])
+                                    12'h305: mtvec_we = 1'b1;
+                                    12'h340: mscratch_we = 1'b1;
+                                    12'h341: mepc_we = 1'b1;
+                                    12'h342: mcause_we = 1'b1;
+                                    12'h300: mstatus_we = 1'b1;
+                                    12'h304: mie_we = 1'b1;
+                                    12'h344: mip_we = 1'b1;
+                                    12'h180: satp_we = 1'b1;
+                                    12'h343: mtval_we = 1'b1;
+                                    12'h303: mideleg_we = 1'b1;
+                                    12'h302: medeleg_we = 1'b1;
+                                    12'h141: sepc_we = 1'b1;
+                                    12'h142: scause_we = 1'b1;
+                                    12'h143: stval_we = 1'b1;
+                                    12'h105: stvec_we = 1'b1;
+                                    12'h140: sscratch_we = 1'b1;
+                                    default: mtvec_we = 1'b0; //pseudo instruction rdtime, rdtimeh included
+                                endcase
+                            end
                             excpreq = 1;
                         end
                         `FUNCT3_CSRRCI, `FUNCT3_CSRRSI, `FUNCT3_CSRRWI: begin
@@ -576,7 +586,6 @@ always @(*) begin
     end
 end
 
-//Forwarding is done inside csr.v
 always @(*) begin
     mtvec_data_out = mtvec_data_in;
     mscratch_data_out = mscratch_data_in;
@@ -637,7 +646,10 @@ always @(*) begin
         mstatus_data_out = if_mstatus;
     if (if_priv_we)
         privilege_data_out = if_priv;
-    //TODO: Page fault in S mode
+    if (if_sepc_we)
+        sepc_data_out = if_sepc;
+    if (if_scause_we)
+        scause_data_out = if_scause;
 end
 
 always @(*) begin

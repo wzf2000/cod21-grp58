@@ -10,11 +10,15 @@ module ppl_if_id(
     input wire [31:0] if_mcause,
     input wire [31:0] if_mstatus,
     input wire [1:0] if_priv,
+    input wire [31:0] if_sepc,
+    input wire [31:0] if_scause,
 
     input wire if_mepc_we,
     input wire if_mcause_we,
     input wire if_mstatus_we,
     input wire if_priv_we,
+    input wire if_sepc_we,
+    input wire if_scause_we,
 
     input wire stall,
     output reg excpreq_out,
@@ -29,11 +33,15 @@ module ppl_if_id(
     output reg [31:0] id_mcause,
     output reg [31:0] id_mstatus,
     output reg [1:0] id_priv,
+    output reg [31:0] id_sepc,
+    output reg [31:0] id_scause,
 
     output reg id_mepc_we,
     output reg id_mcause_we,
     output reg id_mstatus_we,
     output reg id_priv_we,
+    output reg id_sepc_we,
+    output reg id_scause_we,
 
     output reg[31:0] id_pc,
     output reg[31:0] id_instr
@@ -48,11 +56,15 @@ always @(posedge clk or posedge rst) begin
         id_mepc <= 32'b0;
         id_mcause <= 32'b0;
         id_mstatus <= 32'b0;
-        id_priv <= 32'b0;
+        id_priv <= 2'b0;
+        id_sepc <= 32'b0;
+        id_scause <= 32'b0;
         id_mepc_we <= 0;
         id_mcause_we <= 0;
         id_mstatus_we <= 0;
         id_priv_we <= 0;
+        id_sepc_we <= 0;
+        id_scause_we <= 0;
     end
     else begin
         if (stall) begin
@@ -64,10 +76,14 @@ always @(posedge clk or posedge rst) begin
             id_mcause <= id_mcause;
             id_mstatus <= id_mstatus;
             id_priv <= id_priv;
+            id_sepc <= id_sepc;
+            id_scause <= id_scause;
             id_mepc_we <= id_mepc_we;
             id_mcause_we <= id_mcause_we;
             id_mstatus_we <= id_mstatus_we;
             id_priv_we <= id_priv_we;
+            id_sepc_we <= id_sepc_we;
+            id_scause_we <= id_scause_we;
         end
         else if (excp[1]) begin
             id_pc <= 32'b0;
@@ -78,10 +94,14 @@ always @(posedge clk or posedge rst) begin
             id_mcause <= 32'b0;
             id_mstatus <= 32'b0;
             id_priv <= 2'b0;
+            id_sepc <= 32'b0;
+            id_scause <= 32'b0;
             id_mepc_we <= 0;
             id_mcause_we <= 0;
             id_mstatus_we <= 0;
             id_priv_we <= 0;
+            id_sepc_we <= 0;
+            id_scause_we <= 0;
         end
         else if (branch_predict | if_bubble) begin
             id_pc <= 32'b0;
@@ -92,10 +112,14 @@ always @(posedge clk or posedge rst) begin
             id_mcause <= 32'b0;
             id_mstatus <= 32'b0;
             id_priv <= 2'b0;
+            id_sepc <= 32'b0;
+            id_scause <= 32'b0;
             id_mepc_we <= 0;
             id_mcause_we <= 0;
             id_mstatus_we <= 0;
             id_priv_we <= 0;
+            id_sepc_we <= 0;
+            id_scause_we <= 0;
         end
         else begin
             id_pc <= if_pc;
@@ -106,10 +130,14 @@ always @(posedge clk or posedge rst) begin
             id_mcause <= if_mcause;
             id_mstatus <= if_mstatus;
             id_priv <= if_priv;
+            id_sepc <= if_sepc;
+            id_scause <= if_scause;
             id_mepc_we <= if_mepc_we;
             id_mcause_we <= if_mcause_we;
             id_mstatus_we <= if_mstatus_we;
             id_priv_we <= if_priv_we;
+            id_sepc_we <= if_sepc_we;
+            id_scause_we <= if_scause_we;
         end
     end
 end

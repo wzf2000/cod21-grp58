@@ -16,6 +16,8 @@ module PC_reg(
     input wire[31:0] mem_addr_retro,
     
     input wire [31:0] mtvec_in,
+    input wire [31:0] stvec_in,
+    input wire [31:0] medeleg_in,
     input wire [31:0] mstatus_in,
     input wire [1:0] priv_in,
 
@@ -23,11 +25,15 @@ module PC_reg(
     output reg [31:0] mcause_out,
     output reg [31:0] mstatus_out,
     output reg [1:0] priv_out,
+    output reg [31:0] sepc_out,
+    output reg [31:0] scause_out,
 
     output reg mepc_we_out,
     output reg mcause_we_out,
     output reg mstatus_we_out,
     output reg priv_we_out,
+    output reg sepc_we_out,
+    output reg scause_we_out,
 
     input wire[31:0] satp,
     input wire[1:0] priv,
@@ -85,11 +91,15 @@ always @(posedge clk or posedge rst) begin
         mcause_out <= 32'b0;
         mstatus_out <= 32'b0;
         priv_out <= 2'b0;
+        sepc_out <= 32'b0;
+        scause_out <= 32'b0;
 
         mepc_we_out <= 0;
         mcause_we_out <= 0;
         mstatus_we_out <= 0;
         priv_we_out <= 0;
+        sepc_we_out <= 0;
+        scause_we_out <= 0;
     end
     else if (stall) begin
         state <= 1;
@@ -112,11 +122,15 @@ always @(posedge clk or posedge rst) begin
         mcause_out <= 32'b0;
         mstatus_out <= 32'b0;
         priv_out <= 2'b0;
+        sepc_out <= 32'b0;
+        scause_out <= 32'b0;
 
         mepc_we_out <= 0;
         mcause_we_out <= 0;
         mstatus_we_out <= 0;
         priv_we_out <= 0;
+        sepc_we_out <= 0;
+        scause_we_out <= 0;
     end
     else if (excp[0]) begin
         state <= 2;
@@ -141,11 +155,15 @@ always @(posedge clk or posedge rst) begin
         mcause_out <= 32'b0;
         mstatus_out <= 32'b0;
         priv_out <= 2'b0;
+        sepc_out <= 32'b0;
+        scause_out <= 32'b0;
 
         mepc_we_out <= 0;
         mcause_we_out <= 0;
         mstatus_we_out <= 0;
         priv_we_out <= 0;
+        sepc_we_out <= 0;
+        scause_we_out <= 0;
     end
     else begin
         pre_stall <= 0;
@@ -168,11 +186,15 @@ always @(posedge clk or posedge rst) begin
                 mcause_out <= 32'b0;
                 mstatus_out <= 32'b0;
                 priv_out <= 2'b0;
+                sepc_out <= 32'b0;
+                scause_out <= 32'b0;
 
                 mepc_we_out <= 0;
                 mcause_we_out <= 0;
                 mstatus_we_out <= 0;
                 priv_we_out <= 0;
+                sepc_we_out <= 0;
+                scause_we_out <= 0;
             end
             else begin
                 if (translation) begin
@@ -185,19 +207,30 @@ always @(posedge clk or posedge rst) begin
                         if (!tlb_physical[3] || (priv_in == 2'b00 && (!tlb_physical[4])) || (priv_in == 2'b01 && tlb_physical[4] && (!mstatus_in[18]))) begin
                             priv_we_out <= 1;
                             mstatus_we_out <= 1;
-                            mepc_we_out <= 1;
-                            mcause_we_out <= 1;
 
                             if_branch_flag <= 1'b1;
                             if_critical_flag <= 1'b1;
-                            if_branch_addr <= mtvec_in;
                             excpreq <= 1;
-
-                            priv_out <= 2'b11;
-                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                            mepc_out <= branch_addr;
-                            mcause_out <= {1'b0, 27'b0, 4'b1100};
                             pc_ram_en <= 0;
+
+                            if ((priv_in<2) && medeleg_in[12]) begin
+                                priv_out <= 2'b01;
+                                mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                                sepc_out <= branch_addr;
+                                sepc_we_out <= 1;
+                                scause_out <= {1'b0, 27'b0, 4'b1100};
+                                scause_we_out <= 1;
+                                if_branch_addr <= stvec_in;
+                            end
+                            else begin
+                                priv_out <= 2'b11;
+                                mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                                mepc_out <= branch_addr;
+                                mepc_we_out <= 1;
+                                mcause_out <= {1'b0, 27'b0, 4'b1100};
+                                mcause_we_out <= 1;
+                                if_branch_addr <= mtvec_in;
+                            end
                         end
                         else begin
                             excpreq <= 0;
@@ -210,11 +243,15 @@ always @(posedge clk or posedge rst) begin
                             mcause_out <= 32'b0;
                             mstatus_out <= 32'b0;
                             priv_out <= 2'b0;
+                            sepc_out <= 32'b0;
+                            scause_out <= 32'b0;
 
                             mepc_we_out <= 0;
                             mcause_we_out <= 0;
                             mstatus_we_out <= 0;
                             priv_we_out <= 0;
+                            sepc_we_out <= 0;
+                            scause_we_out <= 0;
                         end
                     end
                     else begin //TLB miss
@@ -234,11 +271,15 @@ always @(posedge clk or posedge rst) begin
                         mcause_out <= 32'b0;
                         mstatus_out <= 32'b0;
                         priv_out <= 2'b0;
+                        sepc_out <= 32'b0;
+                        scause_out <= 32'b0;
 
                         mepc_we_out <= 0;
                         mcause_we_out <= 0;
                         mstatus_we_out <= 0;
                         priv_we_out <= 0;
+                        sepc_we_out <= 0;
+                        scause_we_out <= 0;
                     end
                 end
                 else begin
@@ -257,11 +298,15 @@ always @(posedge clk or posedge rst) begin
                     mcause_out <= 32'b0;
                     mstatus_out <= 32'b0;
                     priv_out <= 2'b0;
+                    sepc_out <= 32'b0;
+                    scause_out <= 32'b0;
 
                     mepc_we_out <= 0;
                     mcause_we_out <= 0;
                     mstatus_we_out <= 0;
                     priv_we_out <= 0;
+                    sepc_we_out <= 0;
+                    scause_we_out <= 0;
                 end
             end
         end
@@ -276,19 +321,30 @@ always @(posedge clk or posedge rst) begin
                     if (!tlb_physical[3] || (priv_in == 2'b00 && (!tlb_physical[4])) || (priv_in == 2'b01 && tlb_physical[4] && (!mstatus_in[18]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else begin
                         excpreq <= 0;
@@ -301,11 +357,15 @@ always @(posedge clk or posedge rst) begin
                         mcause_out <= 32'b0;
                         mstatus_out <= 32'b0;
                         priv_out <= 2'b0;
+                        sepc_out <= 32'b0;
+                        scause_out <= 32'b0;
 
                         mepc_we_out <= 0;
                         mcause_we_out <= 0;
                         mstatus_we_out <= 0;
                         priv_we_out <= 0;
+                        sepc_we_out <= 0;
+                        scause_we_out <= 0;
                     end
                 end
                 else begin //TLB miss
@@ -325,11 +385,15 @@ always @(posedge clk or posedge rst) begin
                     mcause_out <= 32'b0;
                     mstatus_out <= 32'b0;
                     priv_out <= 2'b0;
+                    sepc_out <= 32'b0;
+                    scause_out <= 32'b0;
 
                     mepc_we_out <= 0;
                     mcause_we_out <= 0;
                     mstatus_we_out <= 0;
                     priv_we_out <= 0;
+                    sepc_we_out <= 0;
+                    scause_we_out <= 0;
                 end
             end
             else if(translation & (~mem_phase[1]) & mem_phase[0]) begin // 01: level 2 table
@@ -345,53 +409,86 @@ always @(posedge clk or posedge rst) begin
                     if ((~mem_addr_retro[0]) | (mem_addr_retro[2] & (~mem_addr_retro[1]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else if (!mem_addr_retro[3] || (priv_in == 2'b00 && (!mem_addr_retro[4])) || (priv_in == 2'b01 && mem_addr_retro[4] && (!mstatus_in[18]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else if (mem_addr_retro[10] != 0) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else begin
                         excpreq <= 0;
@@ -404,11 +501,15 @@ always @(posedge clk or posedge rst) begin
                         mcause_out <= 32'b0;
                         mstatus_out <= 32'b0;
                         priv_out <= 2'b0;
+                        sepc_out <= 32'b0;
+                        scause_out <= 32'b0;
 
                         mepc_we_out <= 0;
                         mcause_we_out <= 0;
                         mstatus_we_out <= 0;
                         priv_we_out <= 0;
+                        sepc_we_out <= 0;
+                        scause_we_out <= 0;
                     end
                 end
                 else begin
@@ -421,19 +522,30 @@ always @(posedge clk or posedge rst) begin
                     if ((~mem_addr_retro[0]) | (mem_addr_retro[2] & (~mem_addr_retro[1]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else begin
                         excpreq <= 0;
@@ -446,11 +558,15 @@ always @(posedge clk or posedge rst) begin
                         mcause_out <= 32'b0;
                         mstatus_out <= 32'b0;
                         priv_out <= 2'b0;
+                        sepc_out <= 32'b0;
+                        scause_out <= 32'b0;
 
                         mepc_we_out <= 0;
                         mcause_we_out <= 0;
                         mstatus_we_out <= 0;
                         priv_we_out <= 0;
+                        sepc_we_out <= 0;
+                        scause_we_out <= 0;
                     end
                 end
             end
@@ -466,53 +582,86 @@ always @(posedge clk or posedge rst) begin
                 if ((~mem_addr_retro[0]) | (mem_addr_retro[2] & (~mem_addr_retro[1]))) begin
                     priv_we_out <= 1;
                     mstatus_we_out <= 1;
-                    mepc_we_out <= 1;
-                    mcause_we_out <= 1;
 
                     if_branch_flag <= 1'b1;
                     if_critical_flag <= 1'b1;
-                    if_branch_addr <= mtvec_in;
                     excpreq <= 1;
-
-                    priv_out <= 2'b11;
-                    mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out <= pc;
-                    mcause_out <= {1'b0, 27'b0, 4'b1100};
                     pc_ram_en <= 0;
+
+                    if ((priv_in<2) && medeleg_in[12]) begin
+                        priv_out <= 2'b01;
+                        mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out <= pc;
+                        sepc_we_out <= 1;
+                        scause_out <= {1'b0, 27'b0, 4'b1100};
+                        scause_we_out <= 1;
+                        if_branch_addr <= stvec_in;
+                    end
+                    else begin
+                        priv_out <= 2'b11;
+                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out <= pc;
+                        mepc_we_out <= 1;
+                        mcause_out <= {1'b0, 27'b0, 4'b1100};
+                        mcause_we_out <= 1;
+                        if_branch_addr <= mtvec_in;
+                    end
                 end
                 else if (!(mem_addr_retro[3] | mem_addr_retro[2] | mem_addr_retro[1])) begin
                     priv_we_out <= 1;
                     mstatus_we_out <= 1;
-                    mepc_we_out <= 1;
-                    mcause_we_out <= 1;
 
                     if_branch_flag <= 1'b1;
                     if_critical_flag <= 1'b1;
-                    if_branch_addr <= mtvec_in;
                     excpreq <= 1;
-
-                    priv_out <= 2'b11;
-                    mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out <= pc;
-                    mcause_out <= {1'b0, 27'b0, 4'b1100};
                     pc_ram_en <= 0;
+
+                    if ((priv_in<2) && medeleg_in[12]) begin
+                        priv_out <= 2'b01;
+                        mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out <= pc;
+                        sepc_we_out <= 1;
+                        scause_out <= {1'b0, 27'b0, 4'b1100};
+                        scause_we_out <= 1;
+                        if_branch_addr <= stvec_in;
+                    end
+                    else begin
+                        priv_out <= 2'b11;
+                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out <= pc;
+                        mepc_we_out <= 1;
+                        mcause_out <= {1'b0, 27'b0, 4'b1100};
+                        mcause_we_out <= 1;
+                        if_branch_addr <= mtvec_in;
+                    end
                 end
                 else if (!mem_addr_retro[3] || (priv_in == 2'b00 && (!mem_addr_retro[4])) || (priv_in == 2'b01 && mem_addr_retro[4] && (!mstatus_in[18]))) begin
                     priv_we_out <= 1;
                     mstatus_we_out <= 1;
-                    mepc_we_out <= 1;
-                    mcause_we_out <= 1;
 
                     if_branch_flag <= 1'b1;
                     if_critical_flag <= 1'b1;
-                    if_branch_addr <= mtvec_in;
                     excpreq <= 1;
-
-                    priv_out <= 2'b11;
-                    mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out <= pc;
-                    mcause_out <= {1'b0, 27'b0, 4'b1100};
                     pc_ram_en <= 0;
+
+                    if ((priv_in<2) && medeleg_in[12]) begin
+                        priv_out <= 2'b01;
+                        mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out <= pc;
+                        sepc_we_out <= 1;
+                        scause_out <= {1'b0, 27'b0, 4'b1100};
+                        scause_we_out <= 1;
+                        if_branch_addr <= stvec_in;
+                    end
+                    else begin
+                        priv_out <= 2'b11;
+                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out <= pc;
+                        mepc_we_out <= 1;
+                        mcause_out <= {1'b0, 27'b0, 4'b1100};
+                        mcause_we_out <= 1;
+                        if_branch_addr <= mtvec_in;
+                    end
                 end
                 else begin
                     excpreq <= 0;
@@ -525,11 +674,15 @@ always @(posedge clk or posedge rst) begin
                     mcause_out <= 32'b0;
                     mstatus_out <= 32'b0;
                     priv_out <= 2'b0;
+                    sepc_out <= 32'b0;
+                    scause_out <= 32'b0;
 
                     mepc_we_out <= 0;
                     mcause_we_out <= 0;
                     mstatus_we_out <= 0;
                     priv_we_out <= 0;
+                    sepc_we_out <= 0;
+                    scause_we_out <= 0;
                 end
             end
             else begin // doesn't need translation
@@ -548,11 +701,15 @@ always @(posedge clk or posedge rst) begin
                 mcause_out <= 32'b0;
                 mstatus_out <= 32'b0;
                 priv_out <= 2'b0;
+                sepc_out <= 32'b0;
+                scause_out <= 32'b0;
 
                 mepc_we_out <= 0;
                 mcause_we_out <= 0;
                 mstatus_we_out <= 0;
                 priv_we_out <= 0;
+                sepc_we_out <= 0;
+                scause_we_out <= 0;
             end
         end
         else begin
@@ -567,19 +724,30 @@ always @(posedge clk or posedge rst) begin
                     if (!tlb_physical[3] || (priv_in == 2'b00 && (!tlb_physical[4])) || (priv_in == 2'b01 && tlb_physical[4] && (!mstatus_in[18]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else begin
                         excpreq <= 0;
@@ -592,11 +760,15 @@ always @(posedge clk or posedge rst) begin
                         mcause_out <= 32'b0;
                         mstatus_out <= 32'b0;
                         priv_out <= 2'b0;
+                        sepc_out <= 32'b0;
+                        scause_out <= 32'b0;
 
                         mepc_we_out <= 0;
                         mcause_we_out <= 0;
                         mstatus_we_out <= 0;
                         priv_we_out <= 0;
+                        sepc_we_out <= 0;
+                        scause_we_out <= 0;
                     end
                 end
                 else begin //TLB miss
@@ -615,11 +787,15 @@ always @(posedge clk or posedge rst) begin
                     mcause_out <= 32'b0;
                     mstatus_out <= 32'b0;
                     priv_out <= 2'b0;
+                    sepc_out <= 32'b0;
+                    scause_out <= 32'b0;
 
                     mepc_we_out <= 0;
                     mcause_we_out <= 0;
                     mstatus_we_out <= 0;
                     priv_we_out <= 0;
+                    sepc_we_out <= 0;
+                    scause_we_out <= 0;
                 end
             end
             else if(translation & (~mem_phase[1]) & mem_phase[0]) begin // 01: level 2 table
@@ -636,53 +812,86 @@ always @(posedge clk or posedge rst) begin
                     if ((~mem_addr_retro[0]) | (mem_addr_retro[2] & (~mem_addr_retro[1]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else if (!mem_addr_retro[3] || (priv_in == 2'b00 && (!mem_addr_retro[4])) || (priv_in == 2'b01 && mem_addr_retro[4] && (!mstatus_in[18]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else if (mem_addr_retro[10] != 0) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else begin
                         excpreq <= 0;
@@ -695,11 +904,15 @@ always @(posedge clk or posedge rst) begin
                         mcause_out <= 32'b0;
                         mstatus_out <= 32'b0;
                         priv_out <= 2'b0;
+                        sepc_out <= 32'b0;
+                        scause_out <= 32'b0;
 
                         mepc_we_out <= 0;
                         mcause_we_out <= 0;
                         mstatus_we_out <= 0;
                         priv_we_out <= 0;
+                        sepc_we_out <= 0;
+                        scause_we_out <= 0;
                     end
                 end
                 else begin
@@ -711,19 +924,30 @@ always @(posedge clk or posedge rst) begin
                     if ((~mem_addr_retro[0]) | (mem_addr_retro[2] & (~mem_addr_retro[1]))) begin
                         priv_we_out <= 1;
                         mstatus_we_out <= 1;
-                        mepc_we_out <= 1;
-                        mcause_we_out <= 1;
 
                         if_branch_flag <= 1'b1;
                         if_critical_flag <= 1'b1;
-                        if_branch_addr <= mtvec_in;
                         excpreq <= 1;
-
-                        priv_out <= 2'b11;
-                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out <= pc;
-                        mcause_out <= {1'b0, 27'b0, 4'b1100};
                         pc_ram_en <= 0;
+
+                        if ((priv_in<2) && medeleg_in[12]) begin
+                            priv_out <= 2'b01;
+                            mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out <= pc;
+                            sepc_we_out <= 1;
+                            scause_out <= {1'b0, 27'b0, 4'b1100};
+                            scause_we_out <= 1;
+                            if_branch_addr <= stvec_in;
+                        end
+                        else begin
+                            priv_out <= 2'b11;
+                            mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out <= pc;
+                            mepc_we_out <= 1;
+                            mcause_out <= {1'b0, 27'b0, 4'b1100};
+                            mcause_we_out <= 1;
+                            if_branch_addr <= mtvec_in;
+                        end
                     end
                     else begin
                         excpreq <= 0;
@@ -736,11 +960,15 @@ always @(posedge clk or posedge rst) begin
                         mcause_out <= 32'b0;
                         mstatus_out <= 32'b0;
                         priv_out <= 2'b0;
+                        sepc_out <= 32'b0;
+                        scause_out <= 32'b0;
 
                         mepc_we_out <= 0;
                         mcause_we_out <= 0;
                         mstatus_we_out <= 0;
                         priv_we_out <= 0;
+                        sepc_we_out <= 0;
+                        scause_we_out <= 0;
                     end
                 end
             end
@@ -757,53 +985,86 @@ always @(posedge clk or posedge rst) begin
                 if ((~mem_addr_retro[0]) | (mem_addr_retro[2] & (~mem_addr_retro[1]))) begin
                     priv_we_out <= 1;
                     mstatus_we_out <= 1;
-                    mepc_we_out <= 1;
-                    mcause_we_out <= 1;
 
                     if_branch_flag <= 1'b1;
                     if_critical_flag <= 1'b1;
-                    if_branch_addr <= mtvec_in;
                     excpreq <= 1;
-
-                    priv_out <= 2'b11;
-                    mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out <= pc;
-                    mcause_out <= {1'b0, 27'b0, 4'b1100};
                     pc_ram_en <= 0;
+
+                    if ((priv_in<2) && medeleg_in[12]) begin
+                        priv_out <= 2'b01;
+                        mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out <= pc;
+                        sepc_we_out <= 1;
+                        scause_out <= {1'b0, 27'b0, 4'b1100};
+                        scause_we_out <= 1;
+                        if_branch_addr <= stvec_in;
+                    end
+                    else begin
+                        priv_out <= 2'b11;
+                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out <= pc;
+                        mepc_we_out <= 1;
+                        mcause_out <= {1'b0, 27'b0, 4'b1100};
+                        mcause_we_out <= 1;
+                        if_branch_addr <= mtvec_in;
+                    end
                 end
                 else if (!(mem_addr_retro[3] | mem_addr_retro[2] | mem_addr_retro[1])) begin
                     priv_we_out <= 1;
                     mstatus_we_out <= 1;
-                    mepc_we_out <= 1;
-                    mcause_we_out <= 1;
 
                     if_branch_flag <= 1'b1;
                     if_critical_flag <= 1'b1;
-                    if_branch_addr <= mtvec_in;
                     excpreq <= 1;
-
-                    priv_out <= 2'b11;
-                    mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out <= pc;
-                    mcause_out <= {1'b0, 27'b0, 4'b1100};
                     pc_ram_en <= 0;
+
+                    if ((priv_in<2) && medeleg_in[12]) begin
+                        priv_out <= 2'b01;
+                        mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out <= pc;
+                        sepc_we_out <= 1;
+                        scause_out <= {1'b0, 27'b0, 4'b1100};
+                        scause_we_out <= 1;
+                        if_branch_addr <= stvec_in;
+                    end
+                    else begin
+                        priv_out <= 2'b11;
+                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out <= pc;
+                        mepc_we_out <= 1;
+                        mcause_out <= {1'b0, 27'b0, 4'b1100};
+                        mcause_we_out <= 1;
+                        if_branch_addr <= mtvec_in;
+                    end
                 end
                 else if (!mem_addr_retro[3] || (priv_in == 2'b00 && (!mem_addr_retro[4])) || (priv_in == 2'b01 && mem_addr_retro[4] && (!mstatus_in[18]))) begin
                     priv_we_out <= 1;
                     mstatus_we_out <= 1;
-                    mepc_we_out <= 1;
-                    mcause_we_out <= 1;
 
                     if_branch_flag <= 1'b1;
                     if_critical_flag <= 1'b1;
-                    if_branch_addr <= mtvec_in;
                     excpreq <= 1;
-
-                    priv_out <= 2'b11;
-                    mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out <= pc;
-                    mcause_out <= {1'b0, 27'b0, 4'b1100};
                     pc_ram_en <= 0;
+
+                    if ((priv_in<2) && medeleg_in[12]) begin
+                        priv_out <= 2'b01;
+                        mstatus_out <= {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out <= pc;
+                        sepc_we_out <= 1;
+                        scause_out <= {1'b0, 27'b0, 4'b1100};
+                        scause_we_out <= 1;
+                        if_branch_addr <= stvec_in;
+                    end
+                    else begin
+                        priv_out <= 2'b11;
+                        mstatus_out <= {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out <= pc;
+                        mepc_we_out <= 1;
+                        mcause_out <= {1'b0, 27'b0, 4'b1100};
+                        mcause_we_out <= 1;
+                        if_branch_addr <= mtvec_in;
+                    end
                 end
                 else begin
                     excpreq <= 0;
@@ -816,11 +1077,15 @@ always @(posedge clk or posedge rst) begin
                     mcause_out <= 32'b0;
                     mstatus_out <= 32'b0;
                     priv_out <= 2'b0;
+                    sepc_out <= 32'b0;
+                    scause_out <= 32'b0;
 
                     mepc_we_out <= 0;
                     mcause_we_out <= 0;
                     mstatus_we_out <= 0;
                     priv_we_out <= 0;
+                    sepc_we_out <= 0;
+                    scause_we_out <= 0;
                 end
             end
             else begin // doesn't need translation
@@ -840,11 +1105,15 @@ always @(posedge clk or posedge rst) begin
                 mcause_out <= 32'b0;
                 mstatus_out <= 32'b0;
                 priv_out <= 2'b0;
+                sepc_out <= 32'b0;
+                scause_out <= 32'b0;
 
                 mepc_we_out <= 0;
                 mcause_we_out <= 0;
                 mstatus_we_out <= 0;
                 priv_we_out <= 0;
+                sepc_we_out <= 0;
+                scause_we_out <= 0;
             end
         end
     end
