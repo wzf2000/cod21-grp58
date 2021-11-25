@@ -585,6 +585,7 @@ always @(*) begin
                             end
                             12'hc81: begin
                                 data_out = mtime_in[63:32];
+                            end
                             default: begin
                             end
                         endcase

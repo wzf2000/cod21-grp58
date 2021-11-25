@@ -98,7 +98,7 @@ module ppl_id_ex(
     output reg [31:0] ex_mie_data,
     output reg [31:0] ex_mip_data,
     output reg [31:0] ex_satp_data,
-    output reg [1:0] ex_priv_data
+    output reg [1:0] ex_priv_data,
     output reg [31:0] ex_mtval_data,
     output reg [31:0] ex_mideleg_data,
     output reg [31:0] ex_medeleg_data,
