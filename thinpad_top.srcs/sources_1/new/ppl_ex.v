@@ -30,6 +30,16 @@ module ppl_ex(
     input wire [31:0] mip_in,
     input wire [31:0] satp_in,
     input wire [1:0] priv_in,
+    input wire [31:0] mtval_in,
+    input wire [31:0] mideleg_in,
+    input wire [31:0] medeleg_in,
+    input wire [31:0] sepc_in,
+    input wire [31:0] scause_in,
+    input wire [31:0] stval_in,
+    input wire [31:0] stvec_in,
+    input wire [31:0] sscratch_in,
+
+    input wire [63:0] mtime_in,
 
     output reg [31:0] mtvec_out,
     output reg [31:0] mscratch_out,
@@ -40,6 +50,14 @@ module ppl_ex(
     output reg [31:0] mip_out,
     output reg [31:0] satp_out,
     output reg [1:0] priv_out,
+    output reg[31:0] mtval_out,
+    output reg[31:0] mideleg_out,
+    output reg[31:0] medeleg_out,
+    output reg[31:0] sepc_out,
+    output reg[31:0] scause_out,
+    output reg[31:0] stval_out,
+    output reg[31:0] stvec_out,
+    output reg[31:0] sscratch_out,
 
     input wire mtvec_we_in,
     input wire mscratch_we_in,
@@ -50,6 +68,14 @@ module ppl_ex(
     input wire mip_we_in,
     input wire satp_we_in,
     input wire priv_we_in,
+    input wire mtval_we_in,
+    input wire mideleg_we_in,
+    input wire medeleg_we_in,
+    input wire sepc_we_in,
+    input wire scause_we_in,
+    input wire stval_we_in,
+    input wire stvec_we_in,
+    input wire sscratch_we_in,
 
     output reg mtvec_we_out,
     output reg mscratch_we_out,
@@ -60,6 +86,14 @@ module ppl_ex(
     output reg mip_we_out,
     output reg satp_we_out,
     output reg priv_we_out,
+    output reg mtval_we_out,
+    output reg mideleg_we_out,
+    output reg medeleg_we_out,
+    output reg sepc_we_out,
+    output reg scause_we_out,
+    output reg stval_we_out,
+    output reg stvec_we_out,
+    output reg sscratch_we_out,
     
     output wire[6:0] alu_opcode_out,
     output wire[2:0] alu_funct3_out,
@@ -99,6 +133,14 @@ always @(*) begin
         mip_we_out = 0;
         satp_we_out = 0;
         priv_we_out = 0;
+        mtval_we_out = 0;
+        mideleg_we_out = 0;
+        medeleg_we_out = 0;
+        sepc_we_out = 0;
+        scause_we_out = 0;
+        stval_we_out = 0;
+        stvec_we_out = 0;
+        sscratch_we_out = 0;
 
         mtvec_out = 0;
         mscratch_out = 0;
@@ -109,6 +151,14 @@ always @(*) begin
         mip_out = 0;
         satp_out = 0;
         priv_out = 0;
+        mtval_out = 0;
+        mideleg_out = 0;
+        medeleg_out = 0;
+        sepc_out = 0;
+        scause_out = 0;
+        stval_out = 0;
+        stvec_out = 0;
+        sscratch_out = 0;
     end
     else begin
         pc_out = pc_in;
@@ -128,6 +178,14 @@ always @(*) begin
         mip_we_out = mip_we_in;
         satp_we_out = satp_we_in;
         priv_we_out = priv_we_in;
+        mtval_we_out = mtval_we_in;
+        mideleg_we_out = mideleg_we_in;
+        medeleg_we_out = medeleg_we_in;
+        sepc_we_out = sepc_we_in;
+        scause_we_out = scause_we_in;
+        stval_we_out = stval_we_in;
+        stvec_we_out = stvec_we_in;
+        sscratch_we_out = sscratch_we_in;
 
         mtvec_out = mtvec_in;
         mscratch_out = mscratch_in;
@@ -138,6 +196,14 @@ always @(*) begin
         mip_out = mip_in;
         satp_out = satp_in;
         priv_out = priv_in;
+        mtval_out = mtval_in;
+        mideleg_out = mideleg_in;
+        medeleg_out = medeleg_in;
+        sepc_out = sepc_in;
+        scause_out = scause_in;
+        stval_out = stval_in;
+        stvec_out = stvec_in;
+        sscratch_out = sscratch_in;
         case (alu_opcode_in)
             `OP_R: begin
                 case (alu_funct3_in)
@@ -330,9 +396,21 @@ always @(*) begin
                                 data_out = mstatus_in;
                                 mstatus_out = mstatus_in & ~regs1_in;
                             end
+                            12'h302: begin
+                                data_out = medeleg_in;
+                                medeleg_out = medeleg_in & ~regs1_in;
+                            end
+                            12'h303: begin
+                                data_out = mideleg_in;
+                                mideleg_out = mideleg_in & ~regs1_in;
+                            end
                             12'h304: begin
                                 data_out = mie_in;
                                 mie_out = mie_in & ~regs1_in;
+                            end
+                            12'h343: begin
+                                data_out = mtval_in;
+                                mtval_out = mtval_in & ~regs1_in;
                             end
                             12'h344: begin
                                 data_out = mip_in;
@@ -341,6 +419,26 @@ always @(*) begin
                             12'h180: begin
                                 data_out = satp_in;
                                 satp_out = satp_in & ~regs1_in;
+                            end
+                            12'h105: begin
+                                data_out = stvec_in;
+                                stvec_out = stvec_in & ~regs1_in;
+                            end
+                            12'h140: begin
+                                data_out = sscratch_in;
+                                sscratch_out = sscratch_in & ~regs1_in;
+                            end
+                            12'h141: begin
+                                data_out = sepc_in;
+                                sepc_out = sepc_in & ~regs1_in;
+                            end
+                            12'h142: begin
+                                data_out = scause_in;
+                                scause_out = scause_in & ~regs1_in;
+                            end
+                            12'h143: begin
+                                data_out = stval_in;
+                                stval_out = stval_in & ~regs1_in;
                             end
                             default: begin
                             end
@@ -368,9 +466,21 @@ always @(*) begin
                                 data_out = mstatus_in;
                                 mstatus_out = mstatus_in | regs1_in;
                             end
+                            12'h302: begin
+                                data_out = medeleg_in;
+                                medeleg_out = medeleg_in | regs1_in;
+                            end
+                            12'h303: begin
+                                data_out = mideleg_in;
+                                mideleg_out = mideleg_in | regs1_in;
+                            end
                             12'h304: begin
                                 data_out = mie_in;
                                 mie_out = mie_in | regs1_in;
+                            end
+                            12'h343: begin
+                                data_out = mtval_in;
+                                mtval_out = mtval_in | regs1_in;
                             end
                             12'h344: begin
                                 data_out = mip_in;
@@ -379,6 +489,26 @@ always @(*) begin
                             12'h180: begin
                                 data_out = satp_in;
                                 satp_out = satp_in | regs1_in;
+                            end
+                            12'h105: begin
+                                data_out = stvec_in;
+                                stvec_out = stvec_in | regs1_in;
+                            end
+                            12'h140: begin
+                                data_out = sscratch_in;
+                                sscratch_out = sscratch_in | regs1_in;
+                            end
+                            12'h141: begin
+                                data_out = sepc_in;
+                                sepc_out = sepc_in | regs1_in;
+                            end
+                            12'h142: begin
+                                data_out = scause_in;
+                                scause_out = scause_in | regs1_in;
+                            end
+                            12'h143: begin
+                                data_out = stval_in;
+                                stval_out = stval_in | regs1_in;
                             end
                             default: begin
                             end
@@ -406,9 +536,21 @@ always @(*) begin
                                 data_out = mstatus_in;
                                 mstatus_out = regs1_in;
                             end
+                            12'h302: begin
+                                data_out = medeleg_in;
+                                medeleg_out = regs1_in;
+                            end
+                            12'h303: begin
+                                data_out = mideleg_in;
+                                mideleg_out = regs1_in;
+                            end
                             12'h304: begin
                                 data_out = mie_in;
                                 mie_out = regs1_in;
+                            end
+                            12'h343: begin
+                                data_out = mtval_in;
+                                mtval_out = regs1_in;
                             end
                             12'h344: begin
                                 data_out = mip_in;
@@ -418,6 +560,31 @@ always @(*) begin
                                 data_out = satp_in;
                                 satp_out = regs1_in;
                             end
+                            12'h105: begin
+                                data_out = stvec_in;
+                                stvec_out = regs1_in;
+                            end
+                            12'h140: begin
+                                data_out = sscratch_in;
+                                sscratch_out = regs1_in;
+                            end
+                            12'h141: begin
+                                data_out = sepc_in;
+                                sepc_out = regs1_in;
+                            end
+                            12'h142: begin
+                                data_out = scause_in;
+                                scause_out = regs1_in;
+                            end
+                            12'h143: begin
+                                data_out = stval_in;
+                                stval_out = regs1_in;
+                            end
+                            12'hc01: begin
+                                data_out = mtime_in[31:0];
+                            end
+                            12'hc81: begin
+                                data_out = mtime_in[63:32];
                             default: begin
                             end
                         endcase
@@ -425,20 +592,46 @@ always @(*) begin
                     `FUNCT3_EBREAK: begin
                         case (alu_funct_csr_in)
                             12'h000: begin //ecall
-                                priv_out = 2'b11;
-                                mstatus_out = {mstatus_in[31:13],priv_in,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],1'b0,mstatus_in[2:0]};
-                                mepc_out = pc_in;
-                                mcause_out = {1'b0, 27'b0, 4'b10, priv_in}; //environment call from U-mode. From U mode?
+                                if ((priv_in<2) && medeleg_in[priv_in+8]) begin
+                                    priv_out = 2'b01;
+                                    mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                                    sepc_out = pc_in;
+                                    scause_out = {1'b0, 27'b0, 4'b10, priv_in};
+                                end
+                                else begin
+                                    priv_out = 2'b11;
+                                    mstatus_out = {mstatus_in[31:13],priv_in,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],1'b0,mstatus_in[2:0]};
+                                    mepc_out = pc_in;
+                                    mcause_out = {1'b0, 27'b0, 4'b10, priv_in}; //environment call from U-mode. From U mode?
+                                end
                             end
                             12'h001: begin //ebreak
-                                priv_out = 2'b11;
-                                mstatus_out = {mstatus_in[31:13],priv_in,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],1'b0,mstatus_in[2:0]};
-                                mepc_out = pc_in;
-                                mcause_out = {1'b0, 27'b0, 4'b0011}; //breakpoint exception
+                                if ((priv_in<2) && medeleg_in[3]) begin
+                                    priv_out = 2'b01;
+                                    mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                                    sepc_out = pc_in;
+                                    scause_out = {1'b0, 27'b0, 4'b0011};
+                                end
+                                else begin
+                                    priv_out = 2'b11;
+                                    mstatus_out = {mstatus_in[31:13],priv_in,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],1'b0,mstatus_in[2:0]};
+                                    mepc_out = pc_in;
+                                    mcause_out = {1'b0, 27'b0, 4'b0011}; //breakpoint exception
+                                end
                             end
                             12'h302: begin //mret, only available to M mode (so priv_in = 2'b11)
                                 priv_out = mstatus_in[12:11];
                                 mstatus_out = {mstatus_in[31:13],2'b11,mstatus_in[10:8],mstatus_in[3],mstatus_in[6:4],mstatus_in[7],mstatus_in[2:0]};
+                            end
+                            12'h102: begin //sret
+                                priv_out = {1'b0,mstatus_in[8]};
+                                mstatus_out = {mstatus_in[31:9],1'b1,mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],mstatus_in[5],mstatus_in[0]};
+                            end
+                            12'hffe: begin //supervisor timer interrupt
+                                priv_out = 2'b01;
+                                mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                                sepc_out = pc_in;
+                                scause_out = {1'b1, 27'b0, 4'b0111};
                             end
                             12'hfff: begin //timer interrupt
                                 priv_out = 2'b11;

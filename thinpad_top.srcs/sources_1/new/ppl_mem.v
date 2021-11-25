@@ -41,6 +41,14 @@ module ppl_mem(
     input wire [31:0] mip_in,
     input wire [31:0] satp_in,
     input wire [1:0] priv_in,
+    input wire [31:0] mtval_in,
+    input wire [31:0] mideleg_in,
+    input wire [31:0] medeleg_in,
+    input wire [31:0] sepc_in,
+    input wire [31:0] scause_in,
+    input wire [31:0] stval_in,
+    input wire [31:0] stvec_in,
+    input wire [31:0] sscratch_in,
 
     output reg [31:0] mtvec_out,
     output reg [31:0] mscratch_out,
@@ -51,6 +59,14 @@ module ppl_mem(
     output reg [31:0] mip_out,
     output reg [31:0] satp_out,
     output reg [1:0] priv_out,
+    output reg[31:0] mtval_out,
+    output reg[31:0] mideleg_out,
+    output reg[31:0] medeleg_out,
+    output reg[31:0] sepc_out,
+    output reg[31:0] scause_out,
+    output reg[31:0] stval_out,
+    output reg[31:0] stvec_out,
+    output reg[31:0] sscratch_out,
 
     input wire mtvec_we_in,
     input wire mscratch_we_in,
@@ -61,6 +77,14 @@ module ppl_mem(
     input wire mip_we_in,
     input wire satp_we_in,
     input wire priv_we_in,
+    input wire mtval_we_in,
+    input wire mideleg_we_in,
+    input wire medeleg_we_in,
+    input wire sepc_we_in,
+    input wire scause_we_in,
+    input wire stval_we_in,
+    input wire stvec_we_in,
+    input wire sscratch_we_in,
 
     output reg mtvec_we_out,
     output reg mscratch_we_out,
@@ -71,6 +95,14 @@ module ppl_mem(
     output reg mip_we_out,
     output reg satp_we_out,
     output reg priv_we_out,
+    output reg mtval_we_out,
+    output reg mideleg_we_out,
+    output reg medeleg_we_out,
+    output reg sepc_we_out,
+    output reg scause_we_out,
+    output reg stval_we_out,
+    output reg stvec_we_out,
+    output reg sscratch_we_out,
 
     output reg[31:0] ram_addr,
     output reg[3:0] ram_be_n,
@@ -128,6 +160,14 @@ always @(*) begin
         mip_we_out = 0;
         satp_we_out = 0;
         priv_we_out = 0;
+        mtval_we_out = 0;
+        mideleg_we_out = 0;
+        medeleg_we_out = 0;
+        sepc_we_out = 0;
+        scause_we_out = 0;
+        stval_we_out = 0;
+        stvec_we_out = 0;
+        sscratch_we_out = 0;
 
         mtvec_out = 0;
         mscratch_out = 0;
@@ -138,6 +178,14 @@ always @(*) begin
         mip_out = 0;
         satp_out = 0;
         priv_out = 0;
+        mtval_out = 0;
+        mideleg_out = 0;
+        medeleg_out = 0;
+        sepc_out = 0;
+        scause_out = 0;
+        stval_out = 0;
+        stvec_out = 0;
+        sscratch_out = 0;
         branch_flag_out = 0;
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
@@ -168,6 +216,14 @@ always @(*) begin
         mip_we_out = mip_we_in;
         satp_we_out = satp_we_in;
         priv_we_out = priv_we_in;
+        mtval_we_out = mtval_we_in;
+        mideleg_we_out = mideleg_we_in;
+        medeleg_we_out = medeleg_we_in;
+        sepc_we_out = sepc_we_in;
+        scause_we_out = scause_we_in;
+        stval_we_out = stval_we_in;
+        stvec_we_out = stvec_we_in;
+        sscratch_we_out = sscratch_we_in;
 
         mtvec_out = mtvec_in;
         mscratch_out = mscratch_in;
@@ -178,6 +234,14 @@ always @(*) begin
         mip_out = mip_in;
         satp_out = satp_in;
         priv_out = priv_in;
+        mtval_out = mtval_in;
+        mideleg_out = mideleg_in;
+        medeleg_out = medeleg_in;
+        sepc_out = sepc_in;
+        scause_out = scause_in;
+        stval_out = stval_in;
+        stvec_out = stvec_in;
+        sscratch_out = sscratch_in;
         branch_flag_out = 0;
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
@@ -193,21 +257,28 @@ always @(*) begin
                 if (((~read_data[0]) | (read_data[2] & (~read_data[1]))) && (alu_opcode_in == `OP_S || alu_opcode_in == `OP_L)) begin
                     priv_we_out = 1;
                     mstatus_we_out = 1;
-                    mepc_we_out = 1;
-                    mcause_we_out = 1;
 
                     branch_flag_out = 1'b1;
                     critical_flag_out = 1'b1;
                     branch_addr_out = mtvec_in;
                     excpreq = 1;
 
-                    priv_out = 2'b11;
-                    mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out = pc_in;
-                    if (alu_opcode_in == `OP_S)
-                        mcause_out = {1'b0, 27'b0, 4'b1111};
-                    else
-                        mcause_out = {1'b0, 27'b0, 4'b1101};
+                    if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                        priv_out = 2'b01;
+                        mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out = pc_in;
+                        sepc_we_out = 1;
+                        scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        scause_we_out = 1;
+                    end
+                    else begin
+                        priv_out = 2'b11;
+                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out = pc_in;
+                        mepc_we_out = 1;
+                        mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        mcause_we_out = 1;
+                    end
                 end
                 // mstatus[19] = MXR, mstatus[18] = SUM
                 else if (read_data[3] | read_data[2] | read_data[1]) begin //r w x is not all zero, PTE is leaf
@@ -217,40 +288,80 @@ always @(*) begin
                     if ((alu_opcode_in == `OP_S && (!read_data[2])) || (alu_opcode_in == `OP_L && (!read_data[1]) && (!mstatus_in[19])) || (priv_in == 2'b00 && (!read_data[4])) || (priv_in == 2'b01 && read_data[4] && (!mstatus_in[18]))) begin
                         priv_we_out = 1;
                         mstatus_we_out = 1;
-                        mepc_we_out = 1;
-                        mcause_we_out = 1;
 
                         branch_flag_out = 1'b1;
                         critical_flag_out = 1'b1;
                         branch_addr_out = mtvec_in;
                         excpreq = 1;
 
-                        priv_out = 2'b11;
-                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out = pc_in;
-                        if (alu_opcode_in == `OP_S)
-                            mcause_out = {1'b0, 27'b0, 4'b1111};
-                        else
-                            mcause_out = {1'b0, 27'b0, 4'b1101};
+                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                            priv_out = 2'b01;
+                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out = pc_in;
+                            sepc_we_out = 1;
+                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            scause_we_out = 1;
+                        end
+                        else begin
+                            priv_out = 2'b11;
+                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out = pc_in;
+                            mepc_we_out = 1;
+                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            mcause_we_out = 1;
+                        end
                     end
                     else if (read_data[10] != 0) begin
                         priv_we_out = 1;
                         mstatus_we_out = 1;
-                        mepc_we_out = 1;
-                        mcause_we_out = 1;
 
                         branch_flag_out = 1'b1;
                         critical_flag_out = 1'b1;
                         branch_addr_out = mtvec_in;
                         excpreq = 1;
 
-                        priv_out = 2'b11;
-                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out = pc_in;
-                        if (alu_opcode_in == `OP_S)
-                            mcause_out = {1'b0, 27'b0, 4'b1111};
-                        else
-                            mcause_out = {1'b0, 27'b0, 4'b1101};
+                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                            priv_out = 2'b01;
+                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out = pc_in;
+                            sepc_we_out = 1;
+                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            scause_we_out = 1;
+                        end
+                        else begin
+                            priv_out = 2'b11;
+                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out = pc_in;
+                            mepc_we_out = 1;
+                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            mcause_we_out = 1;
+                        end
+                    end
+                    else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
+                        priv_we_out = 1;
+                        mstatus_we_out = 1;
+
+                        branch_flag_out = 1'b1;
+                        critical_flag_out = 1'b1;
+                        branch_addr_out = mtvec_in;
+                        excpreq = 1;
+
+                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                            priv_out = 2'b01;
+                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out = pc_in;
+                            sepc_we_out = 1;
+                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            scause_we_out = 1;
+                        end
+                        else begin
+                            priv_out = 2'b11;
+                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out = pc_in;
+                            mepc_we_out = 1;
+                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            mcause_we_out = 1;
+                        end
                     end
                     else begin
                         mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
@@ -273,21 +384,28 @@ always @(*) begin
                 if (((~read_data[0]) | (read_data[2] & (~read_data[1]))) && (alu_opcode_in == `OP_S || alu_opcode_in == `OP_L)) begin
                     priv_we_out = 1;
                     mstatus_we_out = 1;
-                    mepc_we_out = 1;
-                    mcause_we_out = 1;
 
                     branch_flag_out = 1'b1;
                     critical_flag_out = 1'b1;
                     branch_addr_out = mtvec_in;
                     excpreq = 1;
 
-                    priv_out = 2'b11;
-                    mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out = pc_in;
-                    if (alu_opcode_in == `OP_S)
-                        mcause_out = {1'b0, 27'b0, 4'b1111};
-                    else
-                        mcause_out = {1'b0, 27'b0, 4'b1101};
+                    if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                        priv_out = 2'b01;
+                        mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out = pc_in;
+                        sepc_we_out = 1;
+                        scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        scause_we_out = 1;
+                    end
+                    else begin
+                        priv_out = 2'b11;
+                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out = pc_in;
+                        mepc_we_out = 1;
+                        mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        mcause_we_out = 1;
+                    end
                 end
                 else if (read_data[3] | read_data[2] | read_data[1]) begin //r w x is not all zero, PTE is leaf
                     tlb_virtual_update = virtual_addr[31:12];
@@ -297,21 +415,54 @@ always @(*) begin
                     if ((alu_opcode_in == `OP_S && (!read_data[2])) || (alu_opcode_in == `OP_L && (!read_data[1]) && (!mstatus_in[19])) || (priv_in == 2'b00 && (!read_data[4])) || (priv_in == 2'b01 && read_data[4] && (!mstatus_in[18]))) begin
                         priv_we_out = 1;
                         mstatus_we_out = 1;
-                        mepc_we_out = 1;
-                        mcause_we_out = 1;
 
                         branch_flag_out = 1'b1;
                         critical_flag_out = 1'b1;
                         branch_addr_out = mtvec_in;
                         excpreq = 1;
 
-                        priv_out = 2'b11;
-                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                        mepc_out = pc_in;
-                        if (alu_opcode_in == `OP_S)
-                            mcause_out = {1'b0, 27'b0, 4'b1111};
-                        else
-                            mcause_out = {1'b0, 27'b0, 4'b1101};
+                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                            priv_out = 2'b01;
+                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out = pc_in;
+                            sepc_we_out = 1;
+                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            scause_we_out = 1;
+                        end
+                        else begin
+                            priv_out = 2'b11;
+                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out = pc_in;
+                            mepc_we_out = 1;
+                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            mcause_we_out = 1;
+                        end
+                    end
+                    else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
+                        priv_we_out = 1;
+                        mstatus_we_out = 1;
+
+                        branch_flag_out = 1'b1;
+                        critical_flag_out = 1'b1;
+                        branch_addr_out = mtvec_in;
+                        excpreq = 1;
+
+                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                            priv_out = 2'b01;
+                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                            sepc_out = pc_in;
+                            sepc_we_out = 1;
+                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            scause_we_out = 1;
+                        end
+                        else begin
+                            priv_out = 2'b11;
+                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                            mepc_out = pc_in;
+                            mepc_we_out = 1;
+                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                            mcause_we_out = 1;
+                        end
                     end
                     else begin
                         mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
@@ -321,42 +472,56 @@ always @(*) begin
                 else begin //r w is is all zero, page fault
                     priv_we_out = 1;
                     mstatus_we_out = 1;
-                    mepc_we_out = 1;
-                    mcause_we_out = 1;
 
                     branch_flag_out = 1'b1;
                     critical_flag_out = 1'b1;
                     branch_addr_out = mtvec_in;
                     excpreq = 1;
 
-                    priv_out = 2'b11;
-                    mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out = pc_in;
-                    if (alu_opcode_in == `OP_S)
-                        mcause_out = {1'b0, 27'b0, 4'b1111};
-                    else
-                        mcause_out = {1'b0, 27'b0, 4'b1101};
+                    if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                        priv_out = 2'b01;
+                        mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out = pc_in;
+                        sepc_we_out = 1;
+                        scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        scause_we_out = 1;
+                    end
+                    else begin
+                        priv_out = 2'b11;
+                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out = pc_in;
+                        mepc_we_out = 1;
+                        mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        mcause_we_out = 1;
+                    end
                 end
             end
             else begin // doesn't need translation or translation done (phase=10)
                 if (translation && ((alu_opcode_in == `OP_S && (!tlb_physical_in[2])) || (alu_opcode_in == `OP_L && (!tlb_physical_in[1]) && (!mstatus_in[19])) || (priv_in == 2'b00 && (!tlb_physical_in[4])) || (priv_in == 2'b01 && tlb_physical_in[4] && (!mstatus_in[18])))) begin
                     priv_we_out = 1;
                     mstatus_we_out = 1;
-                    mepc_we_out = 1;
-                    mcause_we_out = 1;
 
                     branch_flag_out = 1'b1;
                     critical_flag_out = 1'b1;
                     branch_addr_out = mtvec_in;
                     excpreq = 1;
 
-                    priv_out = 2'b11;
-                    mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                    mepc_out = pc_in;
-                    if (alu_opcode_in == `OP_S)
-                        mcause_out = {1'b0, 27'b0, 4'b1111};
-                    else
-                        mcause_out = {1'b0, 27'b0, 4'b1101};
+                    if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                        priv_out = 2'b01;
+                        mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                        sepc_out = pc_in;
+                        sepc_we_out = 1;
+                        scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        scause_we_out = 1;
+                    end
+                    else begin
+                        priv_out = 2'b11;
+                        mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                        mepc_out = pc_in;
+                        mepc_we_out = 1;
+                        mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                        mcause_we_out = 1;
+                    end
                 end
                 else begin
                     regd_en_out = regd_en_in;
