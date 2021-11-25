@@ -61,7 +61,8 @@ module ppl_id(
     output reg[31:0] mem_addr,
 
     output reg[31:0] ret_addr,
-    output reg branch_flag_out, //1: wrong prediction, 0: right prediction 
+    output reg branch_flag_out, 
+    output reg[1:0] branch_predict_success, //00: no prediction, 11: right prediction, 10: wrong prediction
     output reg critical_flag_out,
     output reg[31:0] branch_addr_out,
     output reg tlb_flush,
@@ -147,6 +148,7 @@ always @(*) begin
         mem_en = 0;
         mem_addr = 32'b0;
         branch_flag_out = 0;
+        branch_predict_success = 2'b0;
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
         tlb_flush = 0;
@@ -168,6 +170,7 @@ always @(*) begin
         mem_en = 0;
         mem_addr = 32'b0;
         branch_flag_out = 0;
+        branch_predict_success = 2'b0;
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
         tlb_flush = 0;
@@ -321,12 +324,20 @@ always @(*) begin
                             branch_addr_out = pc_in + {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
                             if (branch_addr_out != pc_next_in) begin
                                 branch_flag_out = 1;
+                                branch_predict_success = 2'b10;
+                            end
+                            else begin
+                                branch_predict_success = 2'b11;
                             end
                         end
                         else begin
                             if ((pc_in+4) != pc_next_in) begin
                                 branch_flag_out = 1;
                                 branch_addr_out = pc_in + 4;
+                                branch_predict_success = 2'b10;
+                            end
+                            else begin
+                                branch_predict_success = 2'b11;
                             end
                         end
                     end
@@ -356,6 +367,10 @@ always @(*) begin
                     branch_addr_out = (pc_in + (offset << 1));
                     if (branch_addr_out!=pc_next_in) begin
                         branch_flag_out = 1;
+                        branch_predict_success = 2'b10;
+                    end
+                    else begin
+                        branch_predict_success = 2'b11;
                     end
                 end
             end

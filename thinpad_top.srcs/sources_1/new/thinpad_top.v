@@ -147,6 +147,9 @@ mtimer timer_inst (
     .interrupt(interrupt)
 );
 
+//BTH output
+wire[1:0] bth_state;
+
 //CSR File
 //input
 wire mtvec_we;
@@ -260,6 +263,7 @@ wire id_excpreq_in;
 
 // ID stage output
 wire id_branch_flag_out;
+wire[1:0] id_branch_predict_success;
 wire id_critical_flag_out;
 wire[31:0] id_branch_addr_out;
 wire[4:0] id_regs1_addr_out;
@@ -487,6 +491,13 @@ assign leds[7:4] = {id_branch_flag_out, id_branch_addr_out[2:0]};
     .state(leds[15:8])
 );
 
+BTH bth(
+    .clk(clk_global),
+    .rst(reset_global),
+    .branch_predict_success(id_branch_predict_success),
+    .state_out(bth_state)
+);
+
 PC_reg pc_reg(
     .clk(clk_global),
     .rst(reset_global),
@@ -495,6 +506,7 @@ PC_reg pc_reg(
     .excpreq(excpreq_if),
 
     .id_branch_flag(id_branch_flag_out),
+    .bth_state_in(bth_state),
     .id_critical_flag(id_critical_flag_out),
     .id_branch_addr(id_branch_addr_out),
     .mem_branch_flag(mem_branch_flag_out),
@@ -612,6 +624,7 @@ ppl_id id(
 
     .ret_addr(id_ret_addr_out),
     .branch_flag_out(id_branch_flag_out),
+    .branch_predict_success(id_branch_predict_success),
     .critical_flag_out(id_critical_flag_out),
     .branch_addr_out(id_branch_addr_out),
     .tlb_flush(id_tlb_flush),
