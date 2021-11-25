@@ -248,6 +248,14 @@ wire[31:0] if_addr_out;
 wire[31:0] if_data_out;
 wire[31:0] if_pc_out;
 wire if_bubble;
+wire[31:0] if_mepc_out;
+wire[31:0] if_mcause_out;
+wire[31:0] if_mstatus_out;
+wire[1:0] if_priv_out;
+wire if_mepc_we_out;
+wire if_mcause_we_out;
+wire if_mstatus_we_out;
+wire if_priv_we_out;
 
 // ID stage input
 wire[31:0] id_pc_in;
@@ -255,6 +263,14 @@ wire[31:0] id_instr_in;
 wire[31:0] id_regs1_in;
 wire[31:0] id_regs2_in;
 wire id_excpreq_in;
+wire[31:0] id_mepc_in;
+wire[31:0] id_mcause_in;
+wire[31:0] id_mstatus_in;
+wire[1:0] id_priv_in;
+wire id_mepc_we_in;
+wire id_mcause_we_in;
+wire id_mstatus_we_in;
+wire id_priv_we_in;
 
 // ID stage output
 wire id_branch_flag_out;
@@ -431,7 +447,7 @@ wire wb_regd_en_in;
 wire[4:0] wb_regd_addr_in;
 wire[31:0] wb_data_in;
 
-assign leds[7:4] = {id_branch_flag_out, id_branch_addr_out[2:0]};
+assign leds[7:5] = {id_branch_flag_out, id_branch_addr_out[1:0]};
 
 // memory controller for base ram, ext ram and cpld uart
 (* dont_touch = "TRUE" *) SRAM sram(
@@ -499,6 +515,20 @@ PC_reg pc_reg(
     .mem_critical_flag(mem_critical_flag_out),
     .mem_branch_addr(mem_branch_addr_out),
     .mem_addr_retro(if_data_out),
+    
+    .mtvec_in(mtvec_o),
+    .mstatus_in(mstatus_o),
+    .priv_in(privilege_o),
+
+    .mepc_out(if_mepc_out),
+    .mcause_out(if_mcause_out),
+    .mstatus_out(if_mstatus_out),
+    .priv_out(if_priv_out),
+
+    .mepc_we_out(if_mepc_we_out),
+    .mcause_we_out(if_mcause_we_out),
+    .mstatus_we_out(if_mstatus_we_out),
+    .priv_we_out(if_priv_we_out),
 
     .satp(satp_o),
     .priv(privilege_o),
@@ -509,7 +539,7 @@ PC_reg pc_reg(
     .pc(if_pc_out),
     .pc_ram_en(if_en_out),
     .bubble(if_bubble),
-    .state(leds[3:0])
+    .state(leds[4:0])
 );
 
 // IF/ID stage
@@ -519,6 +549,16 @@ ppl_if_id if_id(
 
     .if_pc(if_pc_out),
 
+    .if_mepc(if_mepc_out),
+    .if_mcause(if_mcause_out),
+    .if_mstatus(if_mstatus_out),
+    .if_priv(if_priv_out),
+
+    .if_mepc_we(if_mepc_we_out),
+    .if_mcause_we(if_mcause_we_out),
+    .if_mstatus_we(if_mstatus_we_out),
+    .if_priv_we(if_priv_we_out),
+
     .stall(stall),
     .excpreq_out(id_excpreq_in),
     .excp(excp),
@@ -527,6 +567,16 @@ ppl_if_id if_id(
 
     .if_bubble(if_bubble),
     .branch_predict(id_branch_flag_out), // 1: jump, 0: not jump
+
+    .id_mepc(id_mepc_in),
+    .id_mcause(id_mcause_in),
+    .id_mstatus(id_mstatus_in),
+    .id_priv(id_priv_in),
+
+    .id_mepc_we(id_mepc_we_in),
+    .id_mcause_we(id_mcause_we_in),
+    .id_mstatus_we(id_mstatus_we_in),
+    .id_priv_we(id_priv_we_in),
 
     .id_pc(id_pc_in),
     .id_instr(id_instr_in)
@@ -557,6 +607,16 @@ ppl_id id(
 
     .regs1_out(id_regs1_out),
     .regs2_out(id_regs2_out),
+
+    .if_mepc(id_mepc_in),
+    .if_mcause(id_mcause_in),
+    .if_mstatus(id_mstatus_in),
+    .if_priv(id_priv_in),
+
+    .if_mepc_we(id_mepc_we_in),
+    .if_mcause_we(id_mcause_we_in),
+    .if_mstatus_we(id_mstatus_we_in),
+    .if_priv_we(id_priv_we_in),
 
     // EXE stage
     .ex_alu_opcode_in(ex_alu_opcode_out),

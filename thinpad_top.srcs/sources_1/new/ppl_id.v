@@ -13,6 +13,16 @@ module ppl_id(
     output reg[31:0] regs1_out,
     output reg[31:0] regs2_out,
 
+    input wire [31:0] if_mepc,
+    input wire [31:0] if_mcause,
+    input wire [31:0] if_mstatus,
+    input wire [1:0] if_priv,
+
+    input wire if_mepc_we,
+    input wire if_mcause_we,
+    input wire if_mstatus_we,
+    input wire if_priv_we,
+
     // EXE stage
     input wire[6:0] ex_alu_opcode_in,
     input wire ex_regd_en_in,
@@ -170,7 +180,12 @@ always @(*) begin
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
         tlb_flush = 0;
-        {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
+        // {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
+        {mtvec_we, mscratch_we, mie_we, mip_we, satp_we} = 5'b0;
+        mepc_we = if_mepc_we;
+        mcause_we = if_mcause_we;
+        mstatus_we = if_mstatus_we;
+        privilege_we = if_priv_we;
 
         //timer interrupt
         if (mip_data_out[7] & mie_data_out[7] & (mstatus_data_out[3] | ~privilege_data_out[0])) //MTIP && MTIE && MIE
@@ -484,6 +499,14 @@ always @(*) begin
         privilege_data_out = ex_privilege_data_in;
     if (ex_satp_we)
         satp_data_out = ex_satp_data_in;
+    if (if_mepc_we)
+        mepc_data_out = if_mepc;
+    if (if_mcause_we)
+        mcause_data_out = if_mcause;
+    if (if_mstatus_we)
+        mstatus_data_out = if_mstatus;
+    if (if_priv_we)
+        privilege_data_out = if_priv;
 end
 
 always @(*) begin
