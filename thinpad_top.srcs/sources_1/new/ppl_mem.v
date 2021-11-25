@@ -644,34 +644,6 @@ always @(*) begin
                             ram_oe_n = 1'b1;
                         end
                     endcase
-                    if (ram_addr[31:22]!=10'h200 && ram_addr[31:22]!=10'h201 && ram_addr!=32'h10000000 && ram_addr!=32'h10000005 
-                    && ram_addr!=32'h0200bff8 && ram_addr!=32'h0200bffc && ram_addr!=32'h02004000 && ram_addr!=32'h02004004) begin
-                        priv_we_out = 1;
-                        mstatus_we_out = 1;
-
-                        branch_flag_out = 1'b1;
-                        critical_flag_out = 1'b1;
-                        excpreq = 1;
-
-                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
-                            priv_out = 2'b01;
-                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
-                            sepc_out = pc_in;
-                            sepc_we_out = 1;
-                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            scause_we_out = 1;
-                            branch_addr_out = stvec_in;
-                        end
-                        else begin
-                            priv_out = 2'b11;
-                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                            mepc_out = pc_in;
-                            mepc_we_out = 1;
-                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            mcause_we_out = 1;
-                            branch_addr_out = mtvec_in;
-                        end
-                    end
                 end
             end
         end
