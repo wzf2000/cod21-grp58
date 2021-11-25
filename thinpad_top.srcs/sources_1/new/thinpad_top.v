@@ -250,12 +250,10 @@ wire if_en_out;
 wire[31:0] if_addr_out;
 wire[31:0] if_data_out;
 wire[31:0] if_pc_out;
-wire[31:0] if_pc_next_out;
 wire if_bubble;
 
 // ID stage input
 wire[31:0] id_pc_in;
-wire[31:0] id_pc_next_in;
 wire[31:0] id_instr_in;
 wire[31:0] id_regs1_in;
 wire[31:0] id_regs2_in;
@@ -266,6 +264,8 @@ wire id_branch_flag_out;
 wire[1:0] id_branch_predict_success;
 wire id_critical_flag_out;
 wire[31:0] id_branch_addr_out;
+wire[31:0] id_last_branch_dest;
+wire[31:0] id_last_branch_pc;
 wire[4:0] id_regs1_addr_out;
 wire[4:0] id_regs2_addr_out;
 wire[31:0] id_regs1_out;
@@ -506,13 +506,15 @@ PC_reg pc_reg(
     .excpreq(excpreq_if),
 
     .id_branch_flag(id_branch_flag_out),
-    .bth_state_in(bth_state),
     .id_critical_flag(id_critical_flag_out),
     .id_branch_addr(id_branch_addr_out),
     .mem_branch_flag(mem_branch_flag_out),
     .mem_critical_flag(mem_critical_flag_out),
     .mem_branch_addr(mem_branch_addr_out),
     .mem_addr_retro(if_data_out),
+    .last_branch_dest(id_last_branch_dest),
+    .last_branch_pc(id_last_branch_pc),
+    .bth_state_in(bth_state),
 
     .satp(satp_o),
     .priv(privilege_o),
@@ -523,7 +525,6 @@ PC_reg pc_reg(
     .pc(if_pc_out),
     .pc_ram_en(if_en_out),
     .bubble(if_bubble),
-    .pc_next_out(if_pc_next_out),
     .state(leds[3:0])
 );
 
@@ -533,7 +534,6 @@ ppl_if_id if_id(
     .rst(reset_global),
 
     .if_pc(if_pc_out),
-    .if_pc_next(if_pc_next_out),
 
     .stall(stall),
     .excpreq_out(id_excpreq_in),
@@ -545,8 +545,7 @@ ppl_if_id if_id(
     .branch_predict(id_branch_flag_out), // 1: jump, 0: not jump
 
     .id_pc(id_pc_in),
-    .id_instr(id_instr_in),
-    .id_pc_next(id_pc_next_in)
+    .id_instr(id_instr_in)
 );
 
 // register file
@@ -567,7 +566,7 @@ Regfile regfile(
 ppl_id id(
     .rst(reset_global),
     .pc_in(id_pc_in),
-    .pc_next_in(id_pc_next_in),
+    .if_pc_in(if_pc_out),
     .instr(id_instr_in),
 
     .regs1_in(id_regs1_in),
@@ -628,6 +627,8 @@ ppl_id id(
     .critical_flag_out(id_critical_flag_out),
     .branch_addr_out(id_branch_addr_out),
     .tlb_flush(id_tlb_flush),
+    .last_branch_dest(id_last_branch_dest),
+    .last_branch_pc(id_last_branch_pc),
 
     .mtvec_data_in(mtvec_o),
     .mscratch_data_in(mscratch_o),
@@ -1010,3 +1011,4 @@ ppl_mem_wb mem_wb(
 );
 
 endmodule
+

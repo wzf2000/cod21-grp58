@@ -8,13 +8,15 @@ module PC_reg(
     output wire excpreq,
 
     input wire id_branch_flag,
-    input wire[1:0] bth_state_in,
     input wire id_critical_flag,
     input wire[31:0] id_branch_addr,
     input wire mem_branch_flag,
     input wire mem_critical_flag,
     input wire[31:0] mem_branch_addr,
     input wire[31:0] mem_addr_retro,
+    input wire[31:0] last_branch_dest,
+    input wire[31:0] last_branch_pc,
+    input wire[1:0] bth_state_in,
     
     input wire [31:0] mepc_in,
     input wire [31:0] mcause_in,
@@ -40,7 +42,6 @@ module PC_reg(
     output reg[31:0] pc,
     output reg pc_ram_en,
     output reg bubble,
-    output wire[31:0] pc_next_out,
     output wire[3:0] state
 );
 
@@ -50,7 +51,6 @@ reg[31:0] branch_addr_out;
 wire branch_flag;
 wire critical_flag;
 wire[31:0] branch_addr;
-reg[31:0] last_branch_addr;
 
 assign branch_flag = id_branch_flag | mem_branch_flag | branch_flag_out;
 assign critical_flag = id_critical_flag | mem_critical_flag | critical_flag_out;
@@ -63,8 +63,7 @@ assign excpreq = excpreq_reg;
 reg pre_stall;
 reg [1:0] mem_phase;
 wire translation = (~priv[0]) & satp[31];
-wire [31:0] pc_next = bth_state_in[1] ? last_branch_addr : pc + 4;
-assign pc_next_out = pc_next;
+wire [31:0] pc_next = pc + 4;
 
 //TLB
 reg tlb_valid;
@@ -88,15 +87,11 @@ always @(posedge clk or posedge rst) begin
         branch_flag_out <= 0;
         critical_flag_out <= 0;
         branch_addr_out <= 32'b0;
-        last_branch_addr <= 32'b0;
     end
     else if (stall) begin
         pre_stall <= stall;
         if (branch_flag) begin
             pc <= branch_addr;
-            if (id_branch_flag) begin
-                last_branch_addr <= branch_addr;
-            end
         end
         else begin
             pc <= pc;
@@ -112,9 +107,6 @@ always @(posedge clk or posedge rst) begin
     else if (excp[0]) begin
         if (branch_flag) begin
             pc <= branch_addr;
-            if (id_branch_flag) begin
-                last_branch_addr <= branch_addr;
-            end
         end
         else begin
             pc <= pc;
@@ -241,52 +233,87 @@ always @(posedge clk or posedge rst) begin
             if(translation & (~mem_phase[1]) & (~mem_phase[0])) begin // 00: level 1 table
                 if(tlb_valid && (tlb_virtual == pc[31:12])) begin //TLB hit
                     bubble <= 0;
-                    pc_ram_addr <= {tlb_physical[29:10],pc_next[11:0]};
                     mem_phase <= 2'b00;
-                    pc <= pc_next;
+                    if(pc!=last_branch_pc) begin
+                        pc <= pc_next;
+                        pc_ram_addr <= {tlb_physical[29:10],pc_next[11:0]};
+                    end
+                    else begin
+                        pc <= bth_state_in[1] ? last_branch_dest : pc_next;
+                        pc_ram_addr <= bth_state_in[1] ? {tlb_physical[29:10],last_branch_dest[11:0]} : {tlb_physical[29:10],pc_next[11:0]};
+                    end
                 end
                 else begin //TLB miss
                     bubble <= 1;
-                    pc_ram_addr <= {satp[19:0],pc_next[31:22],2'b00}; //each PTE is 4bytes
+                    if(pc!=last_branch_pc) begin
+                        pc_ram_addr <= {satp[19:0],pc_next[31:22],2'b00};
+                    end
+                    else begin
+                        pc_ram_addr <= bth_state_in[1] ? {satp[19:0],last_branch_dest[31:22],2'b00} : {satp[19:0],pc_next[31:22],2'b00};
+                    end
                     mem_phase <= 2'b01;
                 end
             end
             else if(translation & (~mem_phase[1]) & mem_phase[0]) begin // 01: level 2 table
                 if (mem_addr_retro[3]|mem_addr_retro[2]|mem_addr_retro[1]) begin
                     bubble <= 0;
-                    pc_ram_addr <= {mem_addr_retro[29:10],pc_next[11:0]};
                     tlb_virtual <= pc_next[31:12];
                     tlb_physical <= mem_addr_retro;
                     tlb_valid <= ~tlb_flush;
                     mem_phase <= 2'b00;
-                    pc <= pc_next;
+                    if(pc!=last_branch_pc) begin
+                        pc <= pc_next;
+                        pc_ram_addr <= {mem_addr_retro[29:10],pc_next[11:0]};
+                    end
+                    else begin
+                        pc <= bth_state_in[1] ? last_branch_dest : pc_next;
+                        pc_ram_addr <= bth_state_in[1] ? {mem_addr_retro[29:10],last_branch_dest[11:0]} : {mem_addr_retro[29:10],pc_next[11:0]};
+                    end
                 end
                 else begin
                     bubble <= 1;
-                    pc_ram_addr <= {mem_addr_retro[29:10],pc_next[21:12],2'b00};
+                    if(pc!=last_branch_pc) begin
+                        pc_ram_addr <= {mem_addr_retro[29:10],pc_next[21:12],2'b00};
+                    end
+                    else begin
+                        pc_ram_addr <= bth_state_in[1] ? {mem_addr_retro[29:10],last_branch_dest[21:12],2'b00} : {mem_addr_retro[29:10],pc_next[21:12],2'b00};
+                    end
                     mem_phase <= 2'b10;
                 end
             end
             else if(translation & mem_phase[1] & (~mem_phase[0])) begin // 10: physical address
                 bubble <= 0;
-                pc_ram_addr <= {mem_addr_retro[29:10],pc_next[11:0]};
                 tlb_virtual <= pc_next[31:12];
                 tlb_physical <= mem_addr_retro;
                 tlb_valid <= ~tlb_flush;
                 mem_phase <= 2'b00;
-                pc <= pc_next;
+                if(pc!=last_branch_pc) begin
+                    pc <= pc_next;
+                    pc_ram_addr <= {mem_addr_retro[29:10],pc_next[11:0]};
+                end
+                else begin
+                    pc <= bth_state_in[1] ? last_branch_dest : pc_next;
+                    pc_ram_addr <= bth_state_in[1] ? {mem_addr_retro[29:10],last_branch_dest[11:0]} : {mem_addr_retro[29:10],pc_next[11:0]};
+                end
             end
             else begin // doesn't need translation
                 bubble <= 0;
-                pc_ram_addr <= pc_next;
                 mem_phase <= 2'b00;
-                pc <= pc_next;
+                if(pc!=last_branch_pc) begin
+                    pc <= pc_next;
+                    pc_ram_addr <= pc_next;
+                end
+                else begin
+                    pc <= bth_state_in[1] ? last_branch_dest : pc_next;
+                    pc_ram_addr <= bth_state_in[1] ? last_branch_dest : pc_next;
+                end
                 branch_flag_out <= 0;
                 critical_flag_out <= 0;
                 branch_addr_out <= 32'b0;
-            end
+            end    
         end
     end
 end
 
 endmodule
+

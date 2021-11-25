@@ -5,7 +5,7 @@
 module ppl_id(
     input wire rst,
     input wire[31:0] pc_in,
-    input wire[31:0] pc_next_in,
+    input wire[31:0] if_pc_in,
     input wire[31:0] instr,
 
     input wire[31:0] regs1_in,
@@ -61,11 +61,13 @@ module ppl_id(
     output reg[31:0] mem_addr,
 
     output reg[31:0] ret_addr,
-    output reg branch_flag_out, 
+    output reg branch_flag_out,
     output reg[1:0] branch_predict_success, //00: no prediction, 11: right prediction, 10: wrong prediction
     output reg critical_flag_out,
     output reg[31:0] branch_addr_out,
     output reg tlb_flush,
+    output reg[31:0] last_branch_dest,
+    output reg[31:0] last_branch_pc,
 
     //get CSR value from CSR file
     input wire [31:0] mtvec_data_in,
@@ -152,6 +154,8 @@ always @(*) begin
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
         tlb_flush = 0;
+        last_branch_pc <= 32'hffffffff;
+        last_branch_dest <= 32'hffffffff;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
     end
     else begin
@@ -322,16 +326,18 @@ always @(*) begin
                               || funct3 == `FUNCT3_BLTU && regs1_out < regs2_out
                               || funct3 == `FUNCT3_BGEU && regs1_out >= regs2_out) begin
                             branch_addr_out = pc_in + {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
-                            if (branch_addr_out != pc_next_in) begin
-                                branch_flag_out = 1;
-                                branch_predict_success = 2'b10;
-                            end
-                            else begin
+                            if(branch_addr_out==if_pc_in) begin //correct prediction
                                 branch_predict_success = 2'b11;
                             end
+                            else begin
+                                branch_flag_out = 1;
+                                last_branch_pc = pc_in;
+                                branch_predict_success = 2'b10;
+                                last_branch_dest = pc_in + {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
+                            end  
                         end
                         else begin
-                            if ((pc_in+4) != pc_next_in) begin
+                            if ((pc_in+4) != if_pc_in) begin
                                 branch_flag_out = 1;
                                 branch_addr_out = pc_in + 4;
                                 branch_predict_success = 2'b10;
@@ -364,14 +370,8 @@ always @(*) begin
                     regs2_en = 0;
                     imm = offset;
                     ret_addr = pc_in + 4;
+                    branch_flag_out = 1;
                     branch_addr_out = (pc_in + (offset << 1));
-                    if (branch_addr_out!=pc_next_in) begin
-                        branch_flag_out = 1;
-                        branch_predict_success = 2'b10;
-                    end
-                    else begin
-                        branch_predict_success = 2'b11;
-                    end
                 end
             end
             `OP_JALR: begin
@@ -567,3 +567,4 @@ end
 assign stallreq = stall_req_regs1 | stall_req_regs2 | stall_req_LSBJ;
 
 endmodule
+

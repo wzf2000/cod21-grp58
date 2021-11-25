@@ -12,7 +12,7 @@ assign state_out = prediction_history_state;
 
 always @(posedge clk or posedge rst) begin
     if (rst) begin
-        prediction_history_state <= 2'b0;
+        prediction_history_state <= 2'b00;
     end
     else begin
         if (branch_predict_success[1]) begin //branch prediction in if
