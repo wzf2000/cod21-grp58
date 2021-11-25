@@ -477,7 +477,7 @@ always @(*) begin
                         mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
                         mem_phase_back = 2'b10;
                     // end
-                end
+                // end
                 // else begin //r w is is all zero, page fault
                 //     priv_we_out = 1;
                 //     mstatus_we_out = 1;
