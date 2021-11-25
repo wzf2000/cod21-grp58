@@ -56,6 +56,14 @@ module ppl_ex_mem(
     input wire ex_mip_we,
     input wire ex_priv_we,
     input wire ex_satp_we,
+    input wire ex_mtval_we,
+    input wire ex_mideleg_we,
+    input wire ex_medeleg_we,
+    input wire ex_sepc_we,
+    input wire ex_scause_we,
+    input wire ex_stval_we,
+    input wire ex_stvec_we,
+    input wire ex_sscratch_we,
 
     output reg mem_mtvec_we,
     output reg mem_mscratch_we,
@@ -66,6 +74,14 @@ module ppl_ex_mem(
     output reg mem_mip_we,
     output reg mem_priv_we,
     output reg mem_satp_we,
+    output reg mem_mtval_we,
+    output reg mem_mideleg_we,
+    output reg mem_medeleg_we,
+    output reg mem_sepc_we,
+    output reg mem_scause_we,
+    output reg mem_stval_we,
+    output reg mem_stvec_we,
+    output reg mem_sscratch_we,
 
     input wire[31:0] ex_mtvec_data,
     input wire[31:0] ex_mscratch_data,
@@ -76,6 +92,14 @@ module ppl_ex_mem(
     input wire[31:0] ex_mip_data,
     input wire[31:0] ex_satp_data,
     input wire[1:0] ex_priv_data,
+    input wire[31:0] ex_mtval_data,
+    input wire[31:0] ex_mideleg_data,
+    input wire[31:0] ex_medeleg_data,
+    input wire[31:0] ex_sepc_data,
+    input wire[31:0] ex_scause_data,
+    input wire[31:0] ex_stval_data,
+    input wire[31:0] ex_stvec_data,
+    input wire[31:0] ex_sscratch_data,
 
     output reg[31:0] mem_mtvec_data,
     output reg[31:0] mem_mscratch_data,
@@ -85,7 +109,15 @@ module ppl_ex_mem(
     output reg[31:0] mem_mie_data,
     output reg[31:0] mem_mip_data,
     output reg[31:0] mem_satp_data,
-    output reg[1:0] mem_priv_data
+    output reg[1:0] mem_priv_data,
+    output reg[31:0] mem_mtval_data,
+    output reg[31:0] mem_mideleg_data,
+    output reg[31:0] mem_medeleg_data,
+    output reg[31:0] mem_sepc_data,
+    output reg[31:0] mem_scause_data,
+    output reg[31:0] mem_stval_data,
+    output reg[31:0] mem_stvec_data,
+    output reg[31:0] mem_sscratch_data
 );
 
 always @(posedge clk or posedge rst) begin
@@ -115,6 +147,14 @@ always @(posedge clk or posedge rst) begin
         mem_mip_we <= 0;
         mem_priv_we <= 0;
         mem_satp_we <= 0;
+        mem_mtval_we <= 0;
+        mem_mideleg_we <= 0;
+        mem_medeleg_we <= 0;
+        mem_sepc_we <= 0;
+        mem_scause_we <= 0;
+        mem_stval_we <= 0;
+        mem_stvec_we <= 0;
+        mem_sscratch_we <= 0;
 
         mem_mtvec_data <= 32'b0;
         mem_mscratch_data <= 32'b0;
@@ -125,6 +165,14 @@ always @(posedge clk or posedge rst) begin
         mem_mip_data <= 32'b0;
         mem_satp_data <= 32'b0;
         mem_priv_data <= 2'b0;
+        mem_mtval_data <= 32'b0;
+        mem_mideleg_data <= 32'b0;
+        mem_medeleg_data <= 32'b0;
+        mem_sepc_data <= 32'b0;
+        mem_scause_data <= 32'b0;
+        mem_stval_data <= 32'b0;
+        mem_stvec_data <= 32'b0;
+        mem_sscratch_data <= 32'b0;
 
         excpreq_out <= 0;
     end
@@ -193,6 +241,14 @@ always @(posedge clk or posedge rst) begin
             mem_mip_we <= 0;
             mem_priv_we <= 0;
             mem_satp_we <= 0;
+            mem_mtval_we <= 0;
+            mem_mideleg_we <= 0;
+            mem_medeleg_we <= 0;
+            mem_sepc_we <= 0;
+            mem_scause_we <= 0;
+            mem_stval_we <= 0;
+            mem_stvec_we <= 0;
+            mem_sscratch_we <= 0;
 
             mem_mtvec_data <= 32'b0;
             mem_mscratch_data <= 32'b0;
@@ -203,6 +259,15 @@ always @(posedge clk or posedge rst) begin
             mem_mip_data <= 32'b0;
             mem_satp_data <= 32'b0;
             mem_priv_data <= 2'b0;
+            mem_mtval_data <= 32'b0;
+            mem_mideleg_data <= 32'b0;
+            mem_medeleg_data <= 32'b0;
+            mem_sepc_data <= 32'b0;
+            mem_scause_data <= 32'b0;
+            mem_stval_data <= 32'b0;
+            mem_stvec_data <= 32'b0;
+            mem_sscratch_data <= 32'b0;
+
             excpreq_out <= 0;
         end
     end
@@ -268,6 +333,14 @@ always @(posedge clk or posedge rst) begin
             mem_mip_we <= ex_mip_we;
             mem_priv_we <= ex_priv_we;
             mem_satp_we <= ex_satp_we;
+            mem_mtval_we <= ex_mtval_we;
+            mem_mideleg_we <= ex_mideleg_we;
+            mem_medeleg_we <= ex_medeleg_we;
+            mem_sepc_we <= ex_sepc_we;
+            mem_scause_we <= ex_scause_we;
+            mem_stval_we <= ex_stval_we;
+            mem_stvec_we <= ex_stvec_we;
+            mem_sscratch_we <= ex_sscratch_we;
 
             mem_mtvec_data <= ex_mtvec_data;
             mem_mscratch_data <= ex_mscratch_data;
@@ -278,6 +351,15 @@ always @(posedge clk or posedge rst) begin
             mem_mip_data <= ex_mip_data;
             mem_satp_data <= ex_satp_data;
             mem_priv_data <= ex_priv_data;
+            mem_mtval_data <= ex_mtval_data;
+            mem_mideleg_data <= ex_mideleg_data;
+            mem_medeleg_data <= ex_medeleg_data;
+            mem_sepc_data <= ex_sepc_data;
+            mem_scause_data <= ex_scause_data;
+            mem_stval_data <= ex_stval_data;
+            mem_stvec_data <= ex_stvec_data;
+            mem_sscratch_data <= ex_sscratch_data;
+
             excpreq_out <= excp[2] & !excp[3];
         end
     end
