@@ -279,7 +279,7 @@ always @(posedge clk or posedge rst) begin
         tlb_virtual <= tlb_virtual_update;
         tlb_physical <= tlb_physical_update;
         if (ctrl) begin
-            mem_pc <= 32'b0;
+            mem_pc <= mem_pc;
             mem_alu_opcode <= mem_alu_opcode;
             mem_alu_funct3 <= mem_alu_funct3;
             mem_regd_en <= mem_regd_en;
