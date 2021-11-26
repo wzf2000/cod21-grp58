@@ -61,7 +61,7 @@ assign branch_addr = mem_branch_flag ? mem_branch_addr : (id_branch_flag ? id_br
 
 reg pre_stall;
 reg [1:0] mem_phase;
-wire translation = (~priv[0]) & satp[31];
+wire translation = (~priv[1]) & satp[31];
 wire [31:0] pc_next = pc + 4;
 
 //TLB
