@@ -154,8 +154,8 @@ always @(*) begin
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
         tlb_flush = 0;
-        last_branch_pc <= 32'hffffffff;
-        last_branch_dest <= 32'hffffffff;
+        last_branch_pc = 32'hffffffff;
+        last_branch_dest = 32'hffffffff;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
     end
     else begin
@@ -178,6 +178,8 @@ always @(*) begin
         critical_flag_out = 0;
         branch_addr_out = 32'b0;
         tlb_flush = 0;
+        last_branch_pc = last_branch_pc;
+        last_branch_dest = last_branch_dest;
         {mtvec_we, mscratch_we, mepc_we, mcause_we, mstatus_we, mie_we, mip_we, satp_we, privilege_we} = 9'b0;
 
         //timer interrupt
