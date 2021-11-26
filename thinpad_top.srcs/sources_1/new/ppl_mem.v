@@ -128,7 +128,7 @@ module ppl_mem(
 
 
 wire rw = (alu_opcode_in == `OP_S)||(alu_opcode_in == `OP_L);
-wire translation = rw & (~priv[0]) & satp[31];
+wire translation = rw & (~priv[1]) & satp[31];
 wire tlb_hit = tlb_valid_in && (tlb_virtual_in == virtual_addr[31:12]);
 assign stallreq = translation & (~mem_phase[1]) & (~tlb_hit); //00:level 1 table, 01:level 2 table, 10: physical addr
 assign ctrl_back = translation & (~mem_phase[1]) & (~tlb_hit) & (~excpreq);
@@ -313,60 +313,60 @@ always @(*) begin
                             branch_addr_out = mtvec_in;
                         end
                     end
-                    else if (read_data[10] != 0) begin
-                        priv_we_out = 1;
-                        mstatus_we_out = 1;
+                    // else if (read_data[10] != 0) begin
+                    //     priv_we_out = 1;
+                    //     mstatus_we_out = 1;
 
-                        branch_flag_out = 1'b1;
-                        critical_flag_out = 1'b1;
-                        excpreq = 1;
+                    //     branch_flag_out = 1'b1;
+                    //     critical_flag_out = 1'b1;
+                    //     excpreq = 1;
 
-                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
-                            priv_out = 2'b01;
-                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
-                            sepc_out = pc_in;
-                            sepc_we_out = 1;
-                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            scause_we_out = 1;
-                            branch_addr_out = stvec_in;
-                        end
-                        else begin
-                            priv_out = 2'b11;
-                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                            mepc_out = pc_in;
-                            mepc_we_out = 1;
-                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            mcause_we_out = 1;
-                            branch_addr_out = mtvec_in;
-                        end
-                    end
-                    else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
-                        priv_we_out = 1;
-                        mstatus_we_out = 1;
+                    //     if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                    //         priv_out = 2'b01;
+                    //         mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                    //         sepc_out = pc_in;
+                    //         sepc_we_out = 1;
+                    //         scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                    //         scause_we_out = 1;
+                    //         branch_addr_out = stvec_in;
+                    //     end
+                    //     else begin
+                    //         priv_out = 2'b11;
+                    //         mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                    //         mepc_out = pc_in;
+                    //         mepc_we_out = 1;
+                    //         mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                    //         mcause_we_out = 1;
+                    //         branch_addr_out = mtvec_in;
+                    //     end
+                    // end
+                    // else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
+                    //     priv_we_out = 1;
+                    //     mstatus_we_out = 1;
 
-                        branch_flag_out = 1'b1;
-                        critical_flag_out = 1'b1;
-                        excpreq = 1;
+                    //     branch_flag_out = 1'b1;
+                    //     critical_flag_out = 1'b1;
+                    //     excpreq = 1;
 
-                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
-                            priv_out = 2'b01;
-                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
-                            sepc_out = pc_in;
-                            sepc_we_out = 1;
-                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            scause_we_out = 1;
-                            branch_addr_out = stvec_in;
-                        end
-                        else begin
-                            priv_out = 2'b11;
-                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                            mepc_out = pc_in;
-                            mepc_we_out = 1;
-                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            mcause_we_out = 1;
-                            branch_addr_out = mtvec_in;
-                        end
-                    end
+                    //     if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                    //         priv_out = 2'b01;
+                    //         mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                    //         sepc_out = pc_in;
+                    //         sepc_we_out = 1;
+                    //         scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                    //         scause_we_out = 1;
+                    //         branch_addr_out = stvec_in;
+                    //     end
+                    //     else begin
+                    //         priv_out = 2'b11;
+                    //         mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                    //         mepc_out = pc_in;
+                    //         mepc_we_out = 1;
+                    //         mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                    //         mcause_we_out = 1;
+                    //         branch_addr_out = mtvec_in;
+                    //     end
+                    // end
                     else begin
                         mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
                         mem_phase_back = 2'b10;
@@ -412,8 +412,7 @@ always @(*) begin
                         branch_addr_out = mtvec_in;
                     end
                 end
-                else
-                if (read_data[3] | read_data[2] | read_data[1]) begin //r w x is not all zero, PTE is leaf
+                else if (read_data[3] | read_data[2] | read_data[1]) begin //r w x is not all zero, PTE is leaf
                     tlb_virtual_update = virtual_addr[31:12];
                     tlb_physical_update = read_data;
                     tlb_valid_update = ~tlb_flush;
@@ -445,33 +444,33 @@ always @(*) begin
                             branch_addr_out = mtvec_in;
                         end
                     end
-                    else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
-                        priv_we_out = 1;
-                        mstatus_we_out = 1;
+                    // else if ((~read_data[6]) || (alu_opcode_in == `OP_S && (~read_data[7]))) begin
+                    //     priv_we_out = 1;
+                    //     mstatus_we_out = 1;
 
-                        branch_flag_out = 1'b1;
-                        critical_flag_out = 1'b1;
-                        excpreq = 1;
+                    //     branch_flag_out = 1'b1;
+                    //     critical_flag_out = 1'b1;
+                    //     excpreq = 1;
 
-                        if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
-                            priv_out = 2'b01;
-                            mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
-                            sepc_out = pc_in;
-                            sepc_we_out = 1;
-                            scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            scause_we_out = 1;
-                            branch_addr_out = stvec_in;
-                        end
-                        else begin
-                            priv_out = 2'b11;
-                            mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
-                            mepc_out = pc_in;
-                            mepc_we_out = 1;
-                            mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
-                            mcause_we_out = 1;
-                            branch_addr_out = mtvec_in;
-                        end
-                    end
+                    //     if ((priv_in<2) && ((alu_opcode_in==`OP_S&&medeleg_in[15])||(alu_opcode_in==`OP_L&&medeleg_in[13])) ) begin
+                    //         priv_out = 2'b01;
+                    //         mstatus_out = {mstatus_in[31:9],priv_in[0],mstatus_in[7:6],mstatus_in[1],mstatus_in[4:2],1'b0,mstatus_in[0]};
+                    //         sepc_out = pc_in;
+                    //         sepc_we_out = 1;
+                    //         scause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                    //         scause_we_out = 1;
+                    //         branch_addr_out = stvec_in;
+                    //     end
+                    //     else begin
+                    //         priv_out = 2'b11;
+                    //         mstatus_out = {mstatus_in[31:13], priv_in, mstatus_in[10:8], mstatus_in[3], mstatus_in[6:4], 1'b0, mstatus_in[2:0]};
+                    //         mepc_out = pc_in;
+                    //         mepc_we_out = 1;
+                    //         mcause_out = {1'b0, 27'b0, (alu_opcode_in==`OP_S?4'b1111:4'b1101)};
+                    //         mcause_we_out = 1;
+                    //         branch_addr_out = mtvec_in;
+                    //     end
+                    // end
                     else begin
                         mem_addr_back = {read_data[29:10],virtual_addr[11:0]};
                         mem_phase_back = 2'b10;
