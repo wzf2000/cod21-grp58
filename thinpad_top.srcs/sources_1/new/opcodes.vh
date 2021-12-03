@@ -14,6 +14,9 @@
 `define FUNCT3_AND 3'b111 
 
 
+`define OP_R2 7'b1110111
+
+
 `define OP_I 7'b0010011
 
 `define FUNCT3_ADDI 3'b000

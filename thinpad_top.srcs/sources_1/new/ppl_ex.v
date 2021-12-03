@@ -85,6 +85,10 @@ always @(*) begin
                     end
                 endcase
             end
+            `OP_R2: begin
+                data_out[15:0] = $signed(regs1_in[15:0]) + $signed(regs2_in[15:0]);
+                data_out[31:16] = $signed(regs1_in[31:16]) + $signed(regs2_in[31:16]);
+            end
             `OP_I: begin
                 case (alu_funct3_in)
                     `FUNCT3_ADDI: begin
